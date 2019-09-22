@@ -118,7 +118,7 @@ route = np.array([
 
 route_pinv = np.linalg.pinv(route,)
 
-with open("link.flow","r") as f:
+with open(os.path.join(os.path.dirname(__file__),"link.flow"),"r") as f:
   interval = int(f.readline())
 
   while f.readline() != "\n":
@@ -142,7 +142,7 @@ with open("link.flow","r") as f:
       j += 1
       i = 0
 
-with open("link.loss","r") as f:
+with open(os.path.join(os.path.dirname(__file__),"link.loss"),"r") as f:
   link_loss = np.zeros((row, col), float)
 
   i = 0
