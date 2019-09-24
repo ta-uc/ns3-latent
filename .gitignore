@@ -7,3 +7,5 @@
 !matrix/*
 !scratch
 !scratch/*
+!scenario
+!scenario/*

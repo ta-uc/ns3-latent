@@ -18,14 +18,15 @@
 
 #define PACKET_SIZE 1300 //bytes 分割・統合されないサイズにする
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
-#define ONE_DATUM 50 //パケットで1データ
+#define ONE_DATUM 100 //パケットで1データ
 #define DEFAULT_SEND_RATE "5Mbps"
-#define BOTTLE_NECK_LINK_RATE "85Mbps"
+#define BOTTLE_NECK_LINK_RATE "5Mbps"
 #define OTHER_LINK_RATE "85Mbps"
 #define NUM_PACKETS 10000
-#define END_TIME 10 //Seconds
-#define TXQUEUE "5p" //先にうまる
-#define TCQUEUE "5p" //TXが埋まると使われる
+#define END_TIME 60 //Seconds
+#define INTERVAL 10 //Seconds
+// #define TXQUEUE "5p" //先にうまる
+// #define TCQUEUE "5p" //TXが埋まると使われる
 #define TCP_TYPE "ns3::TcpNewReno"
 
 
@@ -37,7 +38,11 @@ NS_LOG_COMPONENT_DEFINE ("Internet2");
 
 Ptr<OutputStreamWrapper> streamLinkFlow;
 Ptr<OutputStreamWrapper> streamLinkLoss;
+Ptr<OutputStreamWrapper> streamSumOfSendRate;
+Ptr<OutputStreamWrapper> streamSendRaten0;
 
+int64_t sum_of_send_rate = 0;
+int64_t send_rate_n0 = 0;
 
 class MyApp : public Application 
 {
@@ -69,7 +74,6 @@ class MyApp : public Application
     std::string m_name;
     uint32_t    m_tcpsent;
     uint32_t    m_packetLoss;
-    double      m_previousLossRate;
     uint64_t    m_targetRate;
     Ptr<OutputStreamWrapper> m_cwndStream;
     Ptr<OutputStreamWrapper> m_datarateStream;
@@ -89,7 +93,6 @@ MyApp::MyApp ()
     m_name (""),
     m_tcpsent (0),
     m_packetLoss (0),
-    m_previousLossRate (0),
     m_targetRate (0),
     m_cwndStream (),
     m_datarateStream ()
@@ -113,11 +116,10 @@ MyApp::Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, u
   m_dataRate = dataRate;
   m_name = name;
   m_targetRate = dataRate.GetBitRate ();
-  m_previousLossRate = 0;
 
-  // AsciiTraceHelper ascii;
+  AsciiTraceHelper ascii;
   // m_cwndStream = ascii.CreateFileStream ("./Data/"+m_name+".cwnd");
-  // m_datarateStream = ascii.CreateFileStream ("./Data/"+m_name+".drate");
+  m_datarateStream = ascii.CreateFileStream ("./Data/"+m_name+".drate");
 }
 
 void
@@ -154,7 +156,6 @@ MyApp::StopApplication (void)
 void
 MyApp::ReConnect (void)
 {
-  m_previousLossRate = m_packetLoss / (double) m_tcpsent;
   m_packetLoss = 0;
   m_tcpsent = 0;
   m_running = true;
@@ -205,12 +206,12 @@ MyApp::ChangeDataRate (double lossRate)
   // uint64_t dataRateNow = m_dataRate.GetBitRate ();
   // if (m_previousLossRate < 0.001 && dataRateNow < m_targetRate)
   // {
-  //   m_dataRate = DataRate(m_targetRate * (1 / exp(-11 * lossRate)));
+  //   m_dataRate = DataRate(m_targetRate * (1 / exp(-13.1 * lossRate)));
   // }else{
-  //   m_dataRate =  DataRate(static_cast<uint64_t>(dataRateNow * exp (-11 * lossRate)));
+  //   m_dataRate =  DataRate(static_cast<uint64_t>(dataRateNow * exp (-13.1 * lossRate)));
   // }
-  m_dataRate =  DataRate(static_cast<uint64_t>(m_targetRate * exp (-11 * lossRate)));
-  // *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
+  m_dataRate =  DataRate(static_cast<uint64_t>(m_targetRate * exp (-13.1 * lossRate)));
+  *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
 }
 
 void
@@ -498,9 +499,8 @@ monitorLink (double time)
 {
   for (uint8_t i = 0; i < 28; i++)
   {
-    int loss = pktLossAry[i] + pktLossAryB[i];
     *streamLinkFlow->GetStream () << pktCountAry[i] << std::endl;
-    *streamLinkLoss->GetStream () << loss << std::endl;
+    *streamLinkLoss->GetStream () << pktLossAry[i] + pktLossAryB[i] << std::endl;
   }
   *streamLinkFlow->GetStream ()<< std::endl;
   *streamLinkLoss->GetStream ()<< std::endl;
@@ -552,13 +552,11 @@ main (int argc, char *argv[])
   InternetStackHelper st;
   st.Install (c);
 
+
   // Setup p2p devices
   PointToPointHelper p2p, p2p_nr;
   p2p.SetDeviceAttribute ("DataRate", StringValue (OTHER_LINK_RATE));
   p2p.SetChannelAttribute ("Delay", StringValue ("1ms"));
-  p2p_nr.SetDeviceAttribute ("DataRate", StringValue (BOTTLE_NECK_LINK_RATE));
-  p2p_nr.SetChannelAttribute ("Delay", StringValue ("1ms"));
-
 
   // Create p2p devices
     NetDeviceContainer d0d1 = p2p.Install (n0n1);
@@ -578,7 +576,7 @@ main (int argc, char *argv[])
   // Create p2p devices end
 
   // Set data rate n0->n1
-  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("5Mbps")));
+  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(BOTTLE_NECK_LINK_RATE)));
 
   // Setup traffic control queue
     TrafficControlHelper tch_lim, tch;
@@ -843,10 +841,8 @@ main (int argc, char *argv[])
   // Setup source application
       TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
       for (int i = 0; i <= 10; i++)
-      // for (int i = 0; i <= 0; i++)
       {
         for (int j = 0; j <= 10; j++)
-        // for (int j = 1; j <= 1; j++)
         {
           if (j != i)
           {
@@ -869,10 +865,9 @@ main (int argc, char *argv[])
   streamLinkFlow = ascii.CreateFileStream ("./matrix/link.flow");
   streamLinkLoss = ascii.CreateFileStream ("./matrix/link.loss");
 
-  uint16_t interval = 10;
-  Simulator::Schedule(Time (Seconds (interval)), &monitorLink, interval);
-  *streamLinkFlow->GetStream ()<< interval <<"\n\n";
-  *streamLinkFlow->GetStream ()<< END_TIME / interval <<"\n\n";
+  Simulator::Schedule(Time (Seconds (INTERVAL)), &monitorLink, INTERVAL);
+  *streamLinkFlow->GetStream ()<< INTERVAL <<"\n\n";
+  *streamLinkFlow->GetStream ()<< END_TIME / INTERVAL <<"\n\n";
 
   // Flow Monitor
   FlowMonitorHelper flowmonHelper;
@@ -883,18 +878,18 @@ main (int argc, char *argv[])
 
 
   // Animation settings
-    AnimationInterface::SetConstantPosition (c.Get (0),2.0,2.0);
-    AnimationInterface::SetConstantPosition (c.Get (1),2.0,4.0);
-    AnimationInterface::SetConstantPosition (c.Get (2),3.0,6.0);
-    AnimationInterface::SetConstantPosition (c.Get (3),4.0,4.0);
-    AnimationInterface::SetConstantPosition (c.Get (4),6.0,4.0);
-    AnimationInterface::SetConstantPosition (c.Get (5),6.0,6.0);
-    AnimationInterface::SetConstantPosition (c.Get (6),8.0,4.0);
-    AnimationInterface::SetConstantPosition (c.Get (7),8.0,3.0);
-    AnimationInterface::SetConstantPosition (c.Get (8),8.0,6.0);
-    AnimationInterface::SetConstantPosition (c.Get (9),9.0,5.0);
-    AnimationInterface::SetConstantPosition (c.Get (10),10.0,4.0);
-    AnimationInterface anim ("./Data/internet2.xml");
+    // AnimationInterface::SetConstantPosition (c.Get (0),2.0,2.0);
+    // AnimationInterface::SetConstantPosition (c.Get (1),2.0,4.0);
+    // AnimationInterface::SetConstantPosition (c.Get (2),3.0,6.0);
+    // AnimationInterface::SetConstantPosition (c.Get (3),4.0,4.0);
+    // AnimationInterface::SetConstantPosition (c.Get (4),6.0,4.0);
+    // AnimationInterface::SetConstantPosition (c.Get (5),6.0,6.0);
+    // AnimationInterface::SetConstantPosition (c.Get (6),8.0,4.0);
+    // AnimationInterface::SetConstantPosition (c.Get (7),8.0,3.0);
+    // AnimationInterface::SetConstantPosition (c.Get (8),8.0,6.0);
+    // AnimationInterface::SetConstantPosition (c.Get (9),9.0,5.0);
+    // AnimationInterface::SetConstantPosition (c.Get (10),10.0,4.0);
+    // AnimationInterface anim ("./Data/internet2.xml");
   //Animation settings end
   
   
