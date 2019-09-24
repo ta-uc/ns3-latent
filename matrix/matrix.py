@@ -116,7 +116,7 @@ route = np.array([
 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]
 ])
 
-route_pinv = np.linalg.pinv(route,)
+route_pinv = np.linalg.pinv(route)
 
 with open(os.path.join(os.path.dirname(__file__),"link.flow"),"r") as f:
   interval = int(f.readline())
@@ -160,30 +160,32 @@ link_flow = link_flow * 8 / interval / 1000000
 link_loss = link_loss * 8 / interval / 1000000
 link_no_loss = link_flow + link_loss
 link_loss_rate = np.divide(link_loss, link_no_loss, out=np.zeros_like(link_loss), where=link_no_loss!=0)
-# link_loss_rate_log = -1 * np.log(1-link_loss_rate)
 link_loss_rate_log = np.log(1-link_loss_rate)
 
+od_flow = np.zeros((110,col), float)
+od_loss_rate_log = np.zeros((110, col), float)
+od_loss_rate = np.zeros((110, col), float)
+od_latent = np.zeros((110, col), float)
+
 for c in range(col):
-  od_flow = np.dot(route_pinv.T, link_flow[:,c].reshape(-1,1))
-  od_loss_rate_log = np.dot(route_pinv.T, link_loss_rate_log[:,c])
-  # od_loss_rate = (-1 * np.exp(-1 * od_loss_rate_log)) + 1
-  od_loss_rate = (-1 * np.exp(od_loss_rate_log)) + 1
-  od_latent = np.zeros((110), float)
+  od_flow[:,c] = np.dot(route_pinv.T, link_flow[:,c])
+  od_loss_rate_log[:,c] = np.dot(route_pinv.T, link_loss_rate_log[:,c])
+  od_loss_rate[:,c] = (-1 * np.exp(od_loss_rate_log[:,c])) + 1
   for i in range(110):
-    od_latent[i] = (1 / math.exp(-11 * od_loss_rate[i])) * od_flow[i]
+    od_latent[:,c][i] = (1 / math.exp(-13.1 * od_loss_rate[:,c][i])) * od_flow[:,c][i]
 
 link_latent = np.dot(route.T, od_latent)
 
-print(link_latent)
-print(link_flow)
+i = 1
+print("odflow\n",od_flow[:,i])
+print("odlatent\n",od_latent[:,i])
 
+print("linkflow\n",link_flow[:,i])
+print("linklatent\n",link_latent[:,i])
 
-# print(od_latent)
+print("linklossrate\n",link_loss_rate[:,i])
 
-a = np.ones(110) * 5
-b = np.dot(route.T,a)
-print(b)
-print(link_latent/b)
-print(od_flow)
-print(link_loss_rate)
-print((1 / math.exp(-11 * 0.26)) * 1)
+# a = np.ones(110) * 5
+# b = np.dot(route.T,a)
+# print(b)
+# print(link_latent/b)
