@@ -22,9 +22,9 @@
 #define DEFAULT_SEND_RATE "5Mbps"
 #define BOTTLE_NECK_LINK_RATE "5Mbps"
 #define OTHER_LINK_RATE "85Mbps"
-#define NUM_PACKETS 10000
-#define END_TIME 60 //Seconds
-#define INTERVAL 10 //Seconds
+#define NUM_PACKETS 30000
+#define END_TIME 65 //Seconds
+#define INTERVAL 20 //Seconds
 // #define TXQUEUE "5p" //先にうまる
 // #define TCQUEUE "5p" //TXが埋まると使われる
 #define TCP_TYPE "ns3::TcpNewReno"
@@ -38,11 +38,7 @@ NS_LOG_COMPONENT_DEFINE ("Internet2");
 
 Ptr<OutputStreamWrapper> streamLinkFlow;
 Ptr<OutputStreamWrapper> streamLinkLoss;
-Ptr<OutputStreamWrapper> streamSumOfSendRate;
-Ptr<OutputStreamWrapper> streamSendRaten0;
 
-int64_t sum_of_send_rate = 0;
-int64_t send_rate_n0 = 0;
 
 class MyApp : public Application 
 {
@@ -77,6 +73,8 @@ class MyApp : public Application
     uint64_t    m_targetRate;
     Ptr<OutputStreamWrapper> m_cwndStream;
     Ptr<OutputStreamWrapper> m_datarateStream;
+    Ptr<OutputStreamWrapper> m_lossStream;
+
 };
 
 MyApp::MyApp ()
@@ -95,7 +93,8 @@ MyApp::MyApp ()
     m_packetLoss (0),
     m_targetRate (0),
     m_cwndStream (),
-    m_datarateStream ()
+    m_datarateStream (),
+    m_lossStream()
 {
 }
 
@@ -120,6 +119,7 @@ MyApp::Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, u
   AsciiTraceHelper ascii;
   // m_cwndStream = ascii.CreateFileStream ("./Data/"+m_name+".cwnd");
   m_datarateStream = ascii.CreateFileStream ("./Data/"+m_name+".drate");
+  m_lossStream = ascii.CreateFileStream ("./Data/"+m_name+".loss");
 }
 
 void
@@ -129,7 +129,6 @@ MyApp::StartApplication (void)
   m_packetsSent = 0;
   m_socket->Bind ();
   m_socket->Connect (m_peer);
-  m_socket->ShutdownRecv ();
   m_socket->TraceConnectWithoutContext("Tx", MakeCallback (&MyApp::CountTCPTx, this));
   m_socket->TraceConnectWithoutContext("CongestionWindow", MakeCallback (&MyApp::DetectPacketLoss, this));
   SendPacket ();
@@ -162,7 +161,6 @@ MyApp::ReConnect (void)
   m_socket = Socket::CreateSocket (m_node, m_tid);;
   m_socket->Bind ();
   m_socket->Connect (m_peer);
-  m_socket->ShutdownRecv ();
   m_socket->TraceConnectWithoutContext("Tx", MakeCallback (&MyApp::CountTCPTx, this));
   m_socket->TraceConnectWithoutContext("CongestionWindow", MakeCallback (&MyApp::DetectPacketLoss, this));
   SendPacket ();
@@ -173,15 +171,18 @@ MyApp::SendPacket (void)
 {
   Ptr<Packet> packet = Create<Packet> (m_packetSize);
   m_socket->Send (packet);
-  // １データ送信でコネクション終了
-  if(++m_packetsSent % ONE_DATUM == 0)
+
+  if(++m_packetsSent % ONE_DATUM == 0)   // １データ送信でコネクション終了
   {
     StopApplication ();
-    ChangeDataRate (m_packetLoss / (double) m_tcpsent);
+    double lossRate = m_packetLoss / (double) m_tcpsent;
+    ChangeDataRate (lossRate);
+    *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
+    *m_lossStream->GetStream () << Simulator::Now ().GetSeconds () << " " << lossRate << std::endl;
     if (m_packetsSent < m_nPackets)
     {
         Simulator::ScheduleNow (&MyApp::ReConnect,this);
-    } 
+    }
   }
 
   if (m_packetsSent < m_nPackets)
@@ -211,7 +212,6 @@ MyApp::ChangeDataRate (double lossRate)
   //   m_dataRate =  DataRate(static_cast<uint64_t>(dataRateNow * exp (-13.1 * lossRate)));
   // }
   m_dataRate =  DataRate(static_cast<uint64_t>(m_targetRate * exp (-13.1 * lossRate)));
-  *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
 }
 
 void
@@ -849,7 +849,7 @@ main (int argc, char *argv[])
             Ptr<MyApp> app = CreateObject<MyApp> ();
             Ptr<Node> node = c.Get (i);
             Address sinkAddress = addresses[j];
-            app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE),"Sender "+std::to_string(i)+" (" + std::to_string(i) + "-" + std::to_string(j) + ")");
+            app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE), "n" + std::to_string(i) + "-n" + std::to_string(j));
             node->AddApplication (app);
             app->SetStartTime (Seconds (0));
             app->SetStopTime (Seconds (END_TIME - 1));
