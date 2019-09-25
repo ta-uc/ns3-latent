@@ -16,8 +16,6 @@
 #include "ns3/traffic-control-helper.h"
 
 
-#include "Eigen/Core"
-#include "Eigen/LU"
 
 #define PACKET_SIZE 1300 //bytes 分割・統合されないサイズにする
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
@@ -33,8 +31,6 @@
 
 
 using namespace ns3;
-
-using namespace Eigen;
 
 
 NS_LOG_COMPONENT_DEFINE ("Internet2");
@@ -229,13 +225,6 @@ MyApp::CountTCPTx (const Ptr<const Packet> packet, const TcpHeader &header, cons
   }
 }
 
-// variables for packet count
-  // uint64_t n0n1tx_t = 0, n0n3tx_t = 0, n1n0tx_t = 0, n1n3tx_t = 0, n1n2tx_t = 0,
-  // uint64_t n2n1tx_t = 0, n2n5tx_t = 0, n3n0tx_t = 0, n3n1tx_t = 0, n3n4tx_t = 0,
-  // uint64_t n4n3tx_t = 0, n4n5tx_t = 0, n4n6tx_t = 0, n5n2tx_t = 0, n5n4tx_t = 0, n5n8tx_t = 0,
-  // uint64_t n6n4tx_t = 0, n6n7tx_t = 0, n6n8tx_t = 0, n7n6tx_t = 0, n7n10tx_t = 0,
-  // uint64_t n8n5tx_t = 0, n8n6tx_t = 0, n8n9tx_t = 0, n9n8tx_t = 0, n9n10tx_t = 0
-  // uint64_t n10n7tx_t = 0, n10n9tx_t = 0
 std::array<uint64_t, 28> pktCountAry = {0};
 
 int rt[112][28] = {{0}};
@@ -286,7 +275,7 @@ main (int argc, char *argv[])
   st.Install (c);
 
   // Setup p2p devices
-  PointToPointHelper p2p, p2p_nr;
+  PointToPointHelper p2p;
   p2p.SetDeviceAttribute ("DataRate", StringValue (OTHER_LINK_RATE));
   p2p.SetChannelAttribute ("Delay", StringValue ("1ms"));
 
