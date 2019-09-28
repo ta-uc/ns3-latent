@@ -20,7 +20,7 @@
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
 #define ONE_DATUM 100 //パケットで1データ
 #define DEFAULT_SEND_RATE "5Mbps"
-#define BOTTLE_NECK_LINK_RATE "5Mbps"
+#define BOTTLE_NECK_LINK_RATE "20Mbps"
 #define OTHER_LINK_RATE "85Mbps"
 #define NUM_PACKETS 30000
 #define END_TIME 65 //Seconds

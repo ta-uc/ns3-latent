@@ -186,10 +186,6 @@ print("linklatent\n",link_latent[:,i])
 
 print("linklossrate\n",link_loss_rate[:,i])
 
-print(od_loss_rate[:,i])
-
-# a = np.ones(110) * 5
-# b = np.dot(route.T,a)
-# print(b)
-# print(link_latent/b)
-# print((1 / math.exp(-11.1 * 0.25)) * 5)
+a = np.ones(110) * 5
+b = np.dot(route.T,a)
+print(b)
