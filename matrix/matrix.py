@@ -163,6 +163,7 @@ link_loss_rate = np.divide(link_loss, link_no_loss, out=np.zeros_like(link_loss)
 link_loss_rate_log = np.log(1-link_loss_rate)
 
 od_flow = np.zeros((110,col), float)
+od_flow = np.zeros((110,col), float)
 od_loss_rate_log = np.zeros((110, col), float)
 od_loss_rate = np.zeros((110, col), float)
 od_latent = np.zeros((110, col), float)
