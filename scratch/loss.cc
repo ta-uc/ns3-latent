@@ -19,10 +19,10 @@
 #define PACKET_SIZE 1300 //bytes 分割・統合されないサイズにする
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
 #define ONE_DATUM 100 //パケットで1データ
-#define DEFAULT_SEND_RATE "5Mbps"
+#define DEFAULT_SEND_RATE "10Mbps"
 #define BOTTLE_NECK_LINK_RATE "5Mbps"
 #define OTHER_LINK_RATE "85Mbps"
-#define NUM_PACKETS 30000
+#define NUM_PACKETS 300000
 #define END_TIME 65 //Seconds
 #define INTERVAL 20 //Seconds
 // #define TXQUEUE "5p" //先にうまる
@@ -33,7 +33,7 @@
 using namespace ns3;
 
 
-NS_LOG_COMPONENT_DEFINE ("Internet2");
+NS_LOG_COMPONENT_DEFINE ("Losstest");
 
 
 Ptr<OutputStreamWrapper> streamLinkFlow;
@@ -204,13 +204,6 @@ MyApp::ScheduleTx (void)
 void
 MyApp::ChangeDataRate (double lossRate)
 {
-  // uint64_t dataRateNow = m_dataRate.GetBitRate ();
-  // if (m_previousLossRate < 0.001 && dataRateNow < m_targetRate)
-  // {
-  //   m_dataRate = DataRate(m_targetRate * (1 / exp(-13.1 * lossRate)));
-  // }else{
-  //   m_dataRate =  DataRate(static_cast<uint64_t>(dataRateNow * exp (-13.1 * lossRate)));
-  // }
   m_dataRate =  DataRate(static_cast<uint64_t>(m_targetRate * exp (-13.1 * lossRate)));
 }
 
@@ -242,7 +235,7 @@ linkPktCount (uint16_t linkn, Ptr< const Packet > packet)
   switch (linkn)
   {
   case 1:
-    pktCountAry[0] += packet->GetSize (); break;
+    pktCountAry[0] += 1; break;
   case 2:
     pktCountAry[1] += packet->GetSize (); break;
   case 3:
@@ -310,7 +303,7 @@ linkPktLossCount (uint16_t const linkn, Ptr<ns3::QueueDiscItem const> item)
   switch (linkn)
   {
     case 1:
-      pktLossAry[0] += item->GetPacket ()->GetSize ();
+      pktLossAry[0] += 1;
       break;
     case 2:
       pktLossAry[1] += item->GetPacket ()->GetSize ();
@@ -399,99 +392,99 @@ linkPktLossCount (uint16_t const linkn, Ptr<ns3::QueueDiscItem const> item)
 }
 
 std::array<uint64_t, 28> pktLossAryB = {0};
-static void
-linkPktLossCountB (uint16_t const linkn, Ptr<ns3::QueueDiscItem const> item, char const *cc)
-{
-  switch (linkn)
-    {
-    case 1:
-      pktLossAryB[0] += item->GetPacket ()->GetSize ();
-      break;
-    case 2:
-      pktLossAryB[1] += item->GetPacket ()->GetSize ();
-      break;
-    case 3:
-      pktLossAryB[2] += item->GetPacket ()->GetSize ();
-      break;
-    case 4:
-      pktLossAryB[3] += item->GetPacket ()->GetSize ();
-      break;
-    case 5:
-      pktLossAryB[4] += item->GetPacket ()->GetSize ();
-      break;
-    case 6:
-      pktLossAryB[5] += item->GetPacket ()->GetSize ();
-      break;
-    case 7:
-      pktLossAryB[6] += item->GetPacket ()->GetSize ();
-      break;
-    case 8:
-      pktLossAryB[7] += item->GetPacket ()->GetSize ();    
-      break;
-    case 9:
-      pktLossAryB[8] += item->GetPacket ()->GetSize ();
-      break;
-    case 10:
-      pktLossAryB[9] += item->GetPacket ()->GetSize ();
-      break;
-    case 11:
-      pktLossAryB[10] += item->GetPacket ()->GetSize ();
-      break;
-    case 12:
-      pktLossAryB[11] += item->GetPacket ()->GetSize ();
-      break;
-    case 13:
-      pktLossAryB[12] += item->GetPacket ()->GetSize ();
-      break;
-    case 14:
-      pktLossAryB[13] += item->GetPacket ()->GetSize ();
-      break;
-    case 15:
-      pktLossAryB[14] += item->GetPacket ()->GetSize ();
-      break;
-    case 16:
-      pktLossAryB[15] += item->GetPacket ()->GetSize ();
-      break;
-    case 17:
-      pktLossAryB[16] += item->GetPacket ()->GetSize ();
-      break;
-    case 18:
-      pktLossAryB[17] += item->GetPacket ()->GetSize ();
-      break;
-    case 19:
-      pktLossAryB[18] += item->GetPacket ()->GetSize ();
-      break;
-    case 20:
-      pktLossAryB[19] += item->GetPacket ()->GetSize ();
-      break;
-    case 21:
-      pktLossAryB[20] += item->GetPacket ()->GetSize ();
-      break;
-    case 22:
-      pktLossAryB[21] += item->GetPacket ()->GetSize ();
-      break;
-    case 23:
-      pktLossAryB[22] += item->GetPacket ()->GetSize ();
-      break;
-    case 24:
-      pktLossAryB[23] += item->GetPacket ()->GetSize ();
-      break;
-    case 25:
-      pktLossAryB[24] += item->GetPacket ()->GetSize ();
-      break;
-    case 26:
-      pktLossAryB[25] += item->GetPacket ()->GetSize ();
-      break;
-    case 27:
-      pktLossAryB[26] += item->GetPacket ()->GetSize ();
-      break;
-    case 28:
-      pktLossAryB[27] += item->GetPacket ()->GetSize ();
-      break;
-    default:
-      break;
-  }
-}
+// static void
+// linkPktLossCountB (uint16_t const linkn, Ptr<ns3::QueueDiscItem const> item, char const *cc)
+// {
+//   switch (linkn)
+//     {
+//     case 1:
+//       pktLossAryB[0] += 1;
+//       break;
+//     case 2:
+//       pktLossAryB[1] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 3:
+//       pktLossAryB[2] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 4:
+//       pktLossAryB[3] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 5:
+//       pktLossAryB[4] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 6:
+//       pktLossAryB[5] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 7:
+//       pktLossAryB[6] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 8:
+//       pktLossAryB[7] += item->GetPacket ()->GetSize ();    
+//       break;
+//     case 9:
+//       pktLossAryB[8] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 10:
+//       pktLossAryB[9] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 11:
+//       pktLossAryB[10] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 12:
+//       pktLossAryB[11] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 13:
+//       pktLossAryB[12] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 14:
+//       pktLossAryB[13] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 15:
+//       pktLossAryB[14] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 16:
+//       pktLossAryB[15] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 17:
+//       pktLossAryB[16] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 18:
+//       pktLossAryB[17] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 19:
+//       pktLossAryB[18] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 20:
+//       pktLossAryB[19] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 21:
+//       pktLossAryB[20] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 22:
+//       pktLossAryB[21] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 23:
+//       pktLossAryB[22] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 24:
+//       pktLossAryB[23] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 25:
+//       pktLossAryB[24] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 26:
+//       pktLossAryB[25] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 27:
+//       pktLossAryB[26] += item->GetPacket ()->GetSize ();
+//       break;
+//     case 28:
+//       pktLossAryB[27] += item->GetPacket ()->GetSize ();
+//       break;
+//     default:
+//       break;
+//   }
+// }
 
 
 static void
@@ -595,17 +588,7 @@ main (int argc, char *argv[])
     tch.Install (d7d10);
     tch.Install (d9d10);
     tch.Install (d4d5);
-
-    // tch_lim.SetRootQueueDisc ("ns3::FqCoDelQueueDisc", "MaxSize", QueueSizeValue (QueueSize (TCQUEUE)));
-    // tch_lim.Install (d0d1);
   // Setup traffic control queue end
-
-
-  // Set queue size
-  // PointerValue queue;
-  // d0d1.Get (0)->GetAttribute ("TxQueue", queue);
-  // Ptr<Queue<Packet>> txQueueD0 = queue.Get<Queue<Packet>> ();
-  // txQueueD0->SetAttribute("MaxSize", StringValue (TXQUEUE));
 
 
   // Link flow monitor reg
@@ -669,119 +652,62 @@ main (int argc, char *argv[])
 
 
   // Packet loss monitor reg
-
     //n0->n1 1
     Config::ConnectWithoutContext ("/NodeList/0/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 1));
-    Config::ConnectWithoutContext ("/NodeList/0/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 1));
-    Config::ConnectWithoutContext ("/NodeList/0/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 1));
     //n0->n3 2
     Config::ConnectWithoutContext ("/NodeList/0/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 2));
-    Config::ConnectWithoutContext ("/NodeList/0/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 2));
-    Config::ConnectWithoutContext ("/NodeList/0/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 2));
     //n1->n0 3
     Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 3));
-    Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 3));
-    Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 3));
     //n1->n2 4
     Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 4));
-    Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 4));
-    Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 4));
     //n1->n3 5
     Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 5));
-    Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 5));
-    Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 5));
     //n2->n1 6
     Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 6));
-    Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 6));
-    Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 6));
     //n2->n5 7
     Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 7));
-    Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 7));
-    Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 7));
     //n3->n0 8
     Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 8));
-    Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 8));
-    Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 8));
     //n3->n1 9
     Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 9));
-    Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 9));
-    Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 9));
     //n3->n4 10
     Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 10));
-    Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 10));
-    Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 10));
     //n4->n3 11
     Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 11));
-    Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 11));
-    Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 11));
     //n4->n6 12
     Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 12));
-    Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 12));
-    Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 12));
     //n4->n5 13
     Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 13));
-    Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 13));
-    Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 13));
     //n5->n2 14
     Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 14));
-    Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 14));
-    Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 14));
     //n5->n8 15
     Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 15));
-    Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 15));
-    Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 15));
     //n5->n4 16
     Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 16));
-    Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 16));
-    Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 16));
     //n6->n4 17
     Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 17));
-    Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 17));
-    Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 17));
     //n6->n8 18
     Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 18));
-    Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 18));
-    Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 18));
     //n6->n7 19
     Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 19));
-    Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 19));
-    Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 19));
     //n7->n6 20
     Config::ConnectWithoutContext ("/NodeList/7/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 20));
-    Config::ConnectWithoutContext ("/NodeList/7/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 20));
-    Config::ConnectWithoutContext ("/NodeList/7/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 20));
     //n7->n10 21
     Config::ConnectWithoutContext ("/NodeList/7/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 21));
-    Config::ConnectWithoutContext ("/NodeList/7/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 21));
-    Config::ConnectWithoutContext ("/NodeList/7/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 21));
     //n8->n5 22
     Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 22));
-    Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 22));
-    Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 22));
     //n8->n6 23
     Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 23));
-    Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 23));
-    Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 23));
     //n8->n9 24
     Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 24));
-    Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 24));
-    Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/3/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 24));
     //n9->n8 25
     Config::ConnectWithoutContext ("/NodeList/9/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 25));
-    Config::ConnectWithoutContext ("/NodeList/9/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 25));
-    Config::ConnectWithoutContext ("/NodeList/9/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 25));
     //n9->n10 26
     Config::ConnectWithoutContext ("/NodeList/9/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 26));
-    Config::ConnectWithoutContext ("/NodeList/9/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 26));
-    Config::ConnectWithoutContext ("/NodeList/9/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 26));
     //n10->n7 27
     Config::ConnectWithoutContext ("/NodeList/10/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 27));
-    Config::ConnectWithoutContext ("/NodeList/10/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 27));
-    Config::ConnectWithoutContext ("/NodeList/10/$ns3::TrafficControlLayer/RootQueueDiscList/1/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 27));
     //n10->n9 28
     Config::ConnectWithoutContext ("/NodeList/10/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 28));
-    Config::ConnectWithoutContext ("/NodeList/10/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropBeforeEnqueue", MakeBoundCallback (&linkPktLossCountB, 28));
-    Config::ConnectWithoutContext ("/NodeList/10/$ns3::TrafficControlLayer/RootQueueDiscList/2/DropAfterDequeue", MakeBoundCallback (&linkPktLossCountB, 28));
   // Packet loss monitor reg end
 
 
@@ -840,9 +766,9 @@ main (int argc, char *argv[])
 
   // Setup source application
       TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
-      for (int i = 0; i <= 10; i++)
+      for (int i = 0; i <= 0; i++)
       {
-        for (int j = 0; j <= 10; j++)
+        for (int j = 1; j <= 1; j++)
         {
           if (j != i)
           {
