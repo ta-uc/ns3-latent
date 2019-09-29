@@ -118,7 +118,7 @@ route = np.array([
 
 route_pinv = np.linalg.pinv(route)
 
-with open(os.path.join(os.path.dirname(__file__),"link.flow"),"r") as f:
+with open(os.path.join(os.path.dirname(__file__),"link.traf"),"r") as f:
   interval = int(f.readline())
 
   while f.readline() != "\n":
@@ -126,7 +126,7 @@ with open(os.path.join(os.path.dirname(__file__),"link.flow"),"r") as f:
 
   col = int(f.readline())
   row = 28
-  link_flow = np.zeros((row, col), float)
+  link_traf = np.zeros((row, col), float)
 
   while f.readline() != "\n":
     pass
@@ -136,7 +136,21 @@ with open(os.path.join(os.path.dirname(__file__),"link.flow"),"r") as f:
 
   for line in f:
     if line != "\n":
-      link_flow[i][j] = int(line)
+      link_traf[i][j] = int(line)
+      i += 1
+    else:
+      j += 1
+      i = 0
+
+with open(os.path.join(os.path.dirname(__file__),"link.pktc"),"r") as f:
+  link_pktc = np.zeros((row, col), float)
+
+  i = 0
+  j = 0
+  
+  for line in f:
+    if line != "\n":
+      link_pktc[i][j] = int(line)
       i += 1
     else:
       j += 1
@@ -156,9 +170,8 @@ with open(os.path.join(os.path.dirname(__file__),"link.loss"),"r") as f:
       j += 1
       i = 0
 
-link_flow = link_flow * 8 / interval / 1000000
-link_loss = link_loss * 8 / interval / 1000000
-link_no_loss = link_flow + link_loss
+link_traf = link_traf * 8 / interval / 1000000
+link_no_loss = link_pktc + link_loss
 link_loss_rate = np.divide(link_loss, link_no_loss, out=np.zeros_like(link_loss), where=link_no_loss!=0)
 link_loss_rate_log = np.log(1-link_loss_rate)
 
@@ -170,19 +183,19 @@ od_latent = np.zeros((110, col), float)
 link_latent = np.zeros((28, col), float)
 
 for c in range(col):
-  od_flow[:,c] = np.dot(route_pinv.T, link_flow[:,c])
+  od_flow[:,c] = np.dot(route_pinv.T, link_traf[:,c])
   od_loss_rate_log[:,c] = np.dot(route, link_loss_rate_log[:,c])
   od_loss_rate[:,c] = (-1 * np.exp(od_loss_rate_log[:,c])) + 1
   for i in range(110):
     od_latent[:,c][i] = (1 / math.exp(-13.1 * od_loss_rate[:,c][i])) * od_flow[:,c][i]
   link_latent[:,c] = np.dot(route.T, od_latent[:,c])
 
-i = 2
+i = 1
 print("odflow\n",od_flow[:,i])
 print("odlatent\n",od_latent[:,i])
 print("odloss\n",od_loss_rate[:,i])
 
-print("linkflow\n",link_flow[:,i])
+print("linktraffic\n",link_traf[:,i])
 print("linklatent\n",link_latent[:,i])
 
 print("linklossrate\n",link_loss_rate[:,i])

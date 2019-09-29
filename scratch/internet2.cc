@@ -36,8 +36,9 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE ("Internet2");
 
 
-Ptr<OutputStreamWrapper> streamLinkFlow;
-Ptr<OutputStreamWrapper> streamLinkLoss;
+Ptr<OutputStreamWrapper> streamLinkTrafSize;
+Ptr<OutputStreamWrapper> streamLinkPktCount;
+Ptr<OutputStreamWrapper> streamLinkLossCount;
 
 
 class MyApp : public Application 
@@ -234,20 +235,22 @@ MyApp::CountTCPTx (const Ptr<const Packet> packet, const TcpHeader &header, cons
 }
 
 std::array<uint64_t, 28> pktCountAry = {0};
+std::array<uint64_t, 28> pktSizeCountAry = {0};
 
 
 static void
 linkPktCount (uint16_t linkn, Ptr< const Packet > packet)
 {
   pktCountAry[linkn - 1] += 1;
+  pktSizeCountAry[linkn -1] += packet->GetSize ();
 }
 
 
-std::array<uint64_t, 28> pktLossAry = {0};
+std::array<uint64_t, 28> pktLossCountAry = {0};
 static void
 linkPktLossCount (uint16_t const linkn, Ptr<ns3::QueueDiscItem const> item)
 {
-  pktLossAry[linkn - 1] += 1;
+  pktLossCountAry[linkn - 1] += 1;
 }
 
 static void
@@ -255,17 +258,17 @@ monitorLink (double time)
 {
   for (uint8_t i = 0; i < 28; i++)
   {
-    *streamLinkFlow->GetStream () << pktCountAry[i] << std::endl;
-    *streamLinkLoss->GetStream () << pktLossAry[i] << std::endl;
+    *streamLinkTrafSize->GetStream () << pktSizeCountAry[i] << std::endl;
+    *streamLinkPktCount->GetStream () << pktCountAry[i] << std::endl;
+    *streamLinkLossCount->GetStream () << pktLossCountAry[i] << std::endl;
   }
-  *streamLinkFlow->GetStream ()<< std::endl;
-  *streamLinkLoss->GetStream ()<< std::endl;
+  *streamLinkTrafSize->GetStream ()<< std::endl;
+  *streamLinkPktCount->GetStream ()<< std::endl;
+  *streamLinkLossCount->GetStream ()<< std::endl;
   
-  for (uint8_t i = 0; i < 28; i++)
-  {
-    pktCountAry[i] = 0;
-    pktLossAry[i] = 0;
-  }
+  pktSizeCountAry = {0};
+  pktCountAry = {0};
+  pktLossCountAry = {0};
 
   Simulator::Schedule (Time ( Seconds (time)), &monitorLink, time);
 }
@@ -560,12 +563,13 @@ main (int argc, char *argv[])
   // Trace settings
   AsciiTraceHelper ascii;
   // p2p_nr.EnableAsciiAll (ascii.CreateFileStream ("./Data/internet2.tr"));
-  streamLinkFlow = ascii.CreateFileStream ("./matrix/link.flow");
-  streamLinkLoss = ascii.CreateFileStream ("./matrix/link.loss");
+  streamLinkTrafSize = ascii.CreateFileStream ("./matrix/link.traf");
+  streamLinkPktCount = ascii.CreateFileStream ("./matrix/link.pktc");
+  streamLinkLossCount = ascii.CreateFileStream ("./matrix/link.loss");
 
   Simulator::Schedule(Time (Seconds (INTERVAL)), &monitorLink, INTERVAL);
-  *streamLinkFlow->GetStream ()<< INTERVAL <<"\n\n";
-  *streamLinkFlow->GetStream ()<< END_TIME / INTERVAL <<"\n\n";
+  *streamLinkTrafSize->GetStream ()<< INTERVAL <<"\n\n";
+  *streamLinkTrafSize->GetStream ()<< END_TIME / INTERVAL <<"\n\n";
 
   // Flow Monitor
   FlowMonitorHelper flowmonHelper;
