@@ -167,6 +167,7 @@ od_flow = np.zeros((110,col), float)
 od_loss_rate_log = np.zeros((110, col), float)
 od_loss_rate = np.zeros((110, col), float)
 od_latent = np.zeros((110, col), float)
+link_latent = np.zeros((28, col), float)
 
 for c in range(col):
   od_flow[:,c] = np.dot(route_pinv.T, link_flow[:,c])
@@ -174,12 +175,12 @@ for c in range(col):
   od_loss_rate[:,c] = (-1 * np.exp(od_loss_rate_log[:,c])) + 1
   for i in range(110):
     od_latent[:,c][i] = (1 / math.exp(-13.1 * od_loss_rate[:,c][i])) * od_flow[:,c][i]
+  link_latent[:,c] = np.dot(route.T, od_latent[:,c])
 
-link_latent = np.dot(route.T, od_latent)
-
-i = 1
+i = 2
 print("odflow\n",od_flow[:,i])
 print("odlatent\n",od_latent[:,i])
+print("odloss\n",od_loss_rate[:,i])
 
 print("linkflow\n",link_flow[:,i])
 print("linklatent\n",link_latent[:,i])
@@ -189,3 +190,4 @@ print("linklossrate\n",link_loss_rate[:,i])
 a = np.ones(110) * 5
 b = np.dot(route.T,a)
 print(b)
+print(link_latent[:,i] / b)
