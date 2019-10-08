@@ -20,7 +20,7 @@
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
 #define ONE_DATUM 100 //パケットで1データ
 #define DEFAULT_SEND_RATE "5Mbps"
-#define BOTTLE_NECK_LINK_RATE "24Mbps"
+#define BOTTLE_NECK_LINK_RATE "20Mbps"
 #define OTHER_LINK_RATE "85Mbps"
 #define NUM_PACKETS 30000
 #define END_TIME 65 //Seconds
@@ -334,7 +334,13 @@ main (int argc, char *argv[])
   // Create p2p devices end
 
   // Set data rate n0->n1
-  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(BOTTLE_NECK_LINK_RATE)));
+  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("20Mbps")));
+  // n3->n0
+  // Config::Set("/NodeList/3/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(BOTTLE_NECK_LINK_RATE)));
+  // n5 -> n2
+  // Config::Set("/NodeList/5/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("64Mbps")));
+  // n2 -> n5
+  // Config::Set("/NodeList/2/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("68Mbps")));
 
   // Setup traffic control queue
     TrafficControlHelper tch_lim, tch;
@@ -365,7 +371,7 @@ main (int argc, char *argv[])
   // txQueueD0->SetAttribute("MaxSize", StringValue (TXQUEUE));
 
 
-  // Link flow monitor reg
+  // Link traffic monitor reg
     //link0->1
     d0d1.Get (0)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&linkPktCount, 1));
     //link0->3
