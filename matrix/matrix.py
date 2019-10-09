@@ -214,9 +214,14 @@ with open(os.path.join(os.path.dirname(__file__),"link.lsiz"),"r") as f:
 
 link_traf = link_traf_bytes * 8 / interval / 1000000
 link_loss_size = link_loss_size_bits * 8 / interval / 1000000
-# link_no_loss = link_pktc + link_loss
-link_no_loss = link_traf + link_loss_size
-link_loss_rate = np.divide(link_loss_size, link_no_loss, out=np.zeros_like(link_loss), where=link_no_loss!=0)
+#number
+link_no_loss = link_pktc + link_loss 
+link_loss_rate = np.divide(link_loss, link_no_loss, out=np.zeros_like(link_loss), where=link_no_loss!=0)
+
+#size
+# link_no_loss = link_traf + link_loss_size 
+# link_loss_rate = np.divide(link_loss_size, link_no_loss, out=np.zeros_like(link_loss), where=link_no_loss!=0)
+
 link_loss_rate_log = np.log(1-link_loss_rate)
 
 od_flow = np.zeros((110,col), float)

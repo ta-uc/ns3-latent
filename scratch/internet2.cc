@@ -20,11 +20,10 @@
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
 #define ONE_DATUM 100 //パケットで1データ
 #define DEFAULT_SEND_RATE "5Mbps"
-#define BOTTLE_NECK_LINK_RATE "20Mbps"
+#define BOTTLE_NECK_LINK_RATE "23Mbps"
 #define OTHER_LINK_RATE "85Mbps"
-// #define NUM_PACKETS 30000
-#define NUM_PACKETS 21000
-#define END_TIME 65 //Seconds
+#define NUM_PACKETS 30000
+#define END_TIME 61 //Seconds
 #define INTERVAL 20 //Seconds
 // #define TXQUEUE "5p" //先にうまる
 // #define TCQUEUE "5p" //TXが埋まると使われる
@@ -246,10 +245,8 @@ linkPktCount (uint16_t linkn, Ptr< const Packet > packet)
   if (packet->GetSize () > 1000)
   {
     pktSizeCountAry[linkn -1] += packet->GetSize () - 54;
-  }else{
-    pktSizeCountAry[linkn -1] += packet->GetSize ();
+    pktCountAry[linkn - 1] += 1;
   }
-  pktCountAry[linkn - 1] += 1;
 }
 
 
@@ -261,7 +258,7 @@ linkPktLossCount (uint16_t const linkn, Ptr<ns3::QueueDiscItem const> item)
   if (item->GetSize () > 1000)
   {
     pktLossCountAry[linkn - 1] += 1;
-    pktLossSizeAry[linkn - 1] += item->GetSize ();
+    pktLossSizeAry[linkn - 1] += item->GetSize () - 54;
   }
 }
 
