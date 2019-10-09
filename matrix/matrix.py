@@ -198,9 +198,25 @@ with open(os.path.join(os.path.dirname(__file__),"link.loss"),"r") as f:
       j += 1
       i = 0
 
+with open(os.path.join(os.path.dirname(__file__),"link.lsiz"),"r") as f:
+  link_loss_size_bits = np.zeros((row, col), float)
+
+  i = 0
+  j = 0
+  
+  for line in f:
+    if line != "\n":
+      link_loss_size_bits[i][j] = int(line)
+      i += 1
+    else:
+      j += 1
+      i = 0
+
 link_traf = link_traf_bytes * 8 / interval / 1000000
-link_no_loss = link_pktc + link_loss
-link_loss_rate = np.divide(link_loss, link_no_loss, out=np.zeros_like(link_loss), where=link_no_loss!=0)
+link_loss_size = link_loss_size_bits * 8 / interval / 1000000
+# link_no_loss = link_pktc + link_loss
+link_no_loss = link_traf + link_loss_size
+link_loss_rate = np.divide(link_loss_size, link_no_loss, out=np.zeros_like(link_loss), where=link_no_loss!=0)
 link_loss_rate_log = np.log(1-link_loss_rate)
 
 od_flow = np.zeros((110,col), float)
@@ -218,7 +234,7 @@ for c in range(col):
     od_latent[:,c][i] = (1 / math.exp(-13.1 * od_loss_rate[:,c][i])) * od_flow[:,c][i]
   link_latent[:,c] = np.dot(route, od_latent[:,c])
 
-i = 0
+i = 1
 print("odflow\n",od_flow[:,i])
 print("odlatent\n",od_latent[:,i])
 print("odloss\n",od_loss_rate[:,i])
@@ -230,5 +246,6 @@ print("linklossrate\n",link_loss_rate[:,i])
 
 a = np.ones(110) * 5
 b = np.dot(route,a)
+print(link_traf[:,i] / b)
 print(link_latent[:,i] / b)
 print(link_latent[:,i]/link_traf[:,i])

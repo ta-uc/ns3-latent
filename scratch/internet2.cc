@@ -22,7 +22,8 @@
 #define DEFAULT_SEND_RATE "5Mbps"
 #define BOTTLE_NECK_LINK_RATE "20Mbps"
 #define OTHER_LINK_RATE "85Mbps"
-#define NUM_PACKETS 30000
+// #define NUM_PACKETS 30000
+#define NUM_PACKETS 21000
 #define END_TIME 65 //Seconds
 #define INTERVAL 20 //Seconds
 // #define TXQUEUE "5p" //先にうまる
@@ -39,6 +40,7 @@ NS_LOG_COMPONENT_DEFINE ("Internet2");
 Ptr<OutputStreamWrapper> streamLinkTrafSize;
 Ptr<OutputStreamWrapper> streamLinkPktCount;
 Ptr<OutputStreamWrapper> streamLinkLossCount;
+Ptr<OutputStreamWrapper> streamLinkLossSize;
 
 
 class MyApp : public Application 
@@ -241,16 +243,26 @@ std::array<uint64_t, 28> pktSizeCountAry = {0};
 static void
 linkPktCount (uint16_t linkn, Ptr< const Packet > packet)
 {
+  if (packet->GetSize () > 1000)
+  {
+    pktSizeCountAry[linkn -1] += packet->GetSize () - 54;
+  }else{
+    pktSizeCountAry[linkn -1] += packet->GetSize ();
+  }
   pktCountAry[linkn - 1] += 1;
-  pktSizeCountAry[linkn -1] += packet->GetSize ();
 }
 
 
 std::array<uint64_t, 28> pktLossCountAry = {0};
+std::array<uint64_t, 28> pktLossSizeAry = {0};
 static void
 linkPktLossCount (uint16_t const linkn, Ptr<ns3::QueueDiscItem const> item)
 {
-  pktLossCountAry[linkn - 1] += 1;
+  if (item->GetSize () > 1000)
+  {
+    pktLossCountAry[linkn - 1] += 1;
+    pktLossSizeAry[linkn - 1] += item->GetSize ();
+  }
 }
 
 static void
@@ -261,15 +273,19 @@ monitorLink (double time)
     *streamLinkTrafSize->GetStream () << pktSizeCountAry[i] << std::endl;
     *streamLinkPktCount->GetStream () << pktCountAry[i] << std::endl;
     *streamLinkLossCount->GetStream () << pktLossCountAry[i] << std::endl;
+    *streamLinkLossSize->GetStream () << pktLossSizeAry[i] << std::endl;
   }
   *streamLinkTrafSize->GetStream ()<< std::endl;
   *streamLinkPktCount->GetStream ()<< std::endl;
   *streamLinkLossCount->GetStream ()<< std::endl;
+  *streamLinkLossSize->GetStream ()<< std::endl;
   
   pktSizeCountAry = {0};
   pktCountAry = {0};
   pktLossCountAry = {0};
+  pktLossSizeAry = {0};
 
+  std::cout << Simulator::Now () << std::endl;
   Simulator::Schedule (Time ( Seconds (time)), &monitorLink, time);
 }
 
@@ -334,7 +350,7 @@ main (int argc, char *argv[])
   // Create p2p devices end
 
   // Set data rate n0->n1
-  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("20Mbps")));
+  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(BOTTLE_NECK_LINK_RATE)));
   // n3->n0
   // Config::Set("/NodeList/3/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(BOTTLE_NECK_LINK_RATE)));
   // n5 -> n2
@@ -572,6 +588,7 @@ main (int argc, char *argv[])
   streamLinkTrafSize = ascii.CreateFileStream ("./matrix/link.traf");
   streamLinkPktCount = ascii.CreateFileStream ("./matrix/link.pktc");
   streamLinkLossCount = ascii.CreateFileStream ("./matrix/link.loss");
+  streamLinkLossSize = ascii.CreateFileStream ("./matrix/link.lsiz");
 
   Simulator::Schedule(Time (Seconds (INTERVAL)), &monitorLink, INTERVAL);
   *streamLinkTrafSize->GetStream ()<< INTERVAL <<"\n\n";
