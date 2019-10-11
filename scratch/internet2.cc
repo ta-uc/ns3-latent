@@ -20,11 +20,11 @@
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
 #define ONE_DATUM 100 //パケットで1データ
 #define DEFAULT_SEND_RATE "5Mbps"
-#define BOTTLE_NECK_LINK_RATE "23Mbps"
+#define BOTTLE_NECK_LINK_RATE "20Mbps"
 #define OTHER_LINK_RATE "85Mbps"
 #define NUM_PACKETS 30000
 #define END_TIME 61 //Seconds
-#define INTERVAL 20 //Seconds
+#define INTERVAL 10 //Seconds
 // #define TXQUEUE "5p" //先にうまる
 // #define TCQUEUE "5p" //TXが埋まると使われる
 #define TCP_TYPE "ns3::TcpNewReno"
@@ -222,7 +222,7 @@ MyApp::DetectPacketLoss (const uint32_t org, const uint32_t cgd)
   // *m_cwndStream->GetStream () << Simulator::Now ().GetSeconds () << " " << cgd << std::endl;
   if(org > cgd) //cwnd 減少
   {
-    ++m_packetLoss;
+    m_packetLoss += 1;
   }
 }
 
@@ -282,7 +282,7 @@ monitorLink (double time)
   pktLossCountAry = {0};
   pktLossSizeAry = {0};
 
-  std::cout << Simulator::Now () << std::endl;
+  std::cout << Simulator::Now ().S << std::endl;
   Simulator::Schedule (Time ( Seconds (time)), &monitorLink, time);
 }
 
