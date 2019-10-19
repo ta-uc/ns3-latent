@@ -343,7 +343,7 @@ main (int argc, char *argv[])
     NetDeviceContainer d9d10 = p2p.Install (n9n10);
   // Create p2p devices end
 
-    // Set data rate n0->n1
+  // Set data rate n0->n1
   Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
   // Set data rate n0->n3
   Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
@@ -399,7 +399,6 @@ main (int argc, char *argv[])
   Config::Set("/NodeList/10/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("42Mbps")));
   // Set data rate n10->n9
   Config::Set("/NodeList/10/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
-
   // Setup traffic control queue
     TrafficControlHelper tch_lim, tch;
     tch.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
