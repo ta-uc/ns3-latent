@@ -21,10 +21,16 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("StaticRoutingSlash32Test");
 
-void ChangeRoute (Ptr<Ipv4StaticRouting> rt)
+void ChangeRoute (Ptr<Ipv4StaticRouting> rt, int mode)
 {
   rt->RemoveRoute(3);
-  rt->AddHostRouteTo (Ipv4Address ("192.168.1.1"), Ipv4Address ("10.1.3.2"), 2);
+  if (mode)
+  {
+    rt->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.3.2"), 2);
+  }else
+  {
+    rt->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.1.2"), 1);
+  }
 }
 
 int 
@@ -61,16 +67,6 @@ main (int argc, char *argv[])
   NetDeviceContainer dBdD = p2p.Install (nBnD);
   NetDeviceContainer dCdD = p2p.Install (nCnD);
 
-  Ptr<CsmaNetDevice> deviceA = CreateObject<CsmaNetDevice> ();
-  deviceA->SetAddress (Mac48Address::Allocate ());
-  nA->AddDevice (deviceA);
-  deviceA->SetQueue (CreateObject<DropTailQueue<Packet> > ());
-
-  Ptr<CsmaNetDevice> deviceD = CreateObject<CsmaNetDevice> ();
-  deviceD->SetAddress (Mac48Address::Allocate ());
-  nD->AddDevice (deviceD);
-  deviceD->SetQueue (CreateObject<DropTailQueue<Packet> > ());
-
   // Later, we add IP addresses.
   Ipv4AddressHelper ipv4;
   ipv4.SetBase ("10.1.1.0", "255.255.255.0");
@@ -90,42 +86,33 @@ main (int argc, char *argv[])
   Ptr<Ipv4> ipv4C = nC->GetObject<Ipv4> ();
   Ptr<Ipv4> ipv4D = nD->GetObject<Ipv4> ();
 
-  int32_t ifIndexA = ipv4A->AddInterface (deviceA);
-  int32_t ifIndexD = ipv4D->AddInterface (deviceD);
-
-  Ipv4InterfaceAddress ifInAddrA = Ipv4InterfaceAddress (Ipv4Address ("172.16.1.1"), Ipv4Mask ("/32"));
-  ipv4A->AddAddress (ifIndexA, ifInAddrA);
-  ipv4A->SetMetric (ifIndexA, 1);
-  ipv4A->SetUp (ifIndexA);
-
-  Ipv4InterfaceAddress ifInAddrD = Ipv4InterfaceAddress (Ipv4Address ("192.168.1.1"), Ipv4Mask ("/32"));
-  ipv4D->AddAddress (ifIndexD, ifInAddrD);
-  ipv4D->SetMetric (ifIndexD, 1);
-  ipv4D->SetUp (ifIndexD);
-
   Ipv4StaticRoutingHelper ipv4RoutingHelper;
   // Create static routes from A to D
   
   Ptr<Ipv4StaticRouting> staticRoutingA = ipv4RoutingHelper.GetStaticRouting (ipv4A);
   // The ifIndex for this outbound route is 1; the first p2p link added
-  staticRoutingA->AddHostRouteTo (Ipv4Address ("192.168.1.1"), Ipv4Address ("10.1.1.2"), 1);
+  staticRoutingA->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.1.2"), 1);
 
-  Simulator::Schedule (Time ( Seconds (5)), &ChangeRoute, staticRoutingA);
+  bool b = 1;
+  for (int i = 1; i < 10; i++)
+  {
+    Simulator::Schedule (Time ( Seconds (i)), &ChangeRoute, staticRoutingA, b);
+    b = !b;
+  }
   
   Ptr<Ipv4StaticRouting> staticRoutingB = ipv4RoutingHelper.GetStaticRouting (ipv4B);
   // The ifIndex we want on node B is 2; 0 corresponds to loopback, and 1 to the first point to point link
-  staticRoutingB->AddHostRouteTo (Ipv4Address ("192.168.1.1"), Ipv4Address ("10.1.2.2"), 2);
+  staticRoutingB->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.2.2"), 2);
   
   Ptr<Ipv4StaticRouting> staticRoutingC = ipv4RoutingHelper.GetStaticRouting (ipv4C);
-  // The ifIndex we want on node C is 2; 0 corresponds to loopback, and 1 to the first point to point link
-  staticRoutingC->AddHostRouteTo (Ipv4Address ("192.168.1.1"), Ipv4Address ("10.1.4.2"), 2);
+  staticRoutingC->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.4.2"), 2);
 
   // Create the OnOff application to send UDP datagrams of size
   // 210 bytes at a rate of 448 Kb/s
   uint16_t port = 9;   // Discard port (RFC 863)
   OnOffHelper onoff ("ns3::UdpSocketFactory", 
-                    Address (InetSocketAddress (ifInAddrD.GetLocal (), port)));
-  onoff.SetConstantRate (DataRate (6000));
+                      Address (InetSocketAddress (Ipv4Address("10.1.4.2"), port)));
+  onoff.SetConstantRate (DataRate (10000));
   ApplicationContainer apps = onoff.Install (nA);
   apps.Start (Seconds (1.0));
   apps.Stop (Seconds (10.0));
@@ -133,7 +120,9 @@ main (int argc, char *argv[])
   // Create a packet sink to receive these packets
   PacketSinkHelper sink ("ns3::UdpSocketFactory",
                         Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
-  apps = sink.Install (nC);
+  apps = sink.Install (nD);
+  apps.Start (Seconds (1.0));
+  apps.Stop (Seconds (10.0));
 
 // Animation settings
   AnimationInterface::SetConstantPosition (c.Get (0),0.0,2.0);
@@ -142,9 +131,6 @@ main (int argc, char *argv[])
   AnimationInterface::SetConstantPosition (c.Get (3),4.0,2.0);
   AnimationInterface anim ("./Data/static-route.xml");
 //Animation settings end
-
-  apps.Start (Seconds (1.0));
-  apps.Stop (Seconds (10.0));
 
 //  AsciiTraceHelper ascii;
 //  p2p.EnableAsciiAll (ascii.CreateFileStream ("static-routing-slash32.tr"));
