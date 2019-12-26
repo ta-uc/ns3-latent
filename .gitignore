@@ -10,5 +10,5 @@
 !scenario
 !scenario/*
 !ipv4-routing-table-entry.*
-!ipv4-staic-routing.*
+!ipv4-static-routing.*
 
