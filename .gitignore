@@ -9,6 +9,8 @@
 !scratch/*
 !scenario
 !scenario/*
-!ipv4-routing-table-entry.*
-!ipv4-static-routing.*
+!ipv4-routing-table-entry.h
+!ipv4-routing-table-entry.cc
+!ipv4-static-routing.h
+!ipv4-static-routing.cc
 
