@@ -140,13 +140,12 @@ main (int argc, char *argv[])
   staticRoutingA->AddHostRouteTo (Ipv4Address ("10.1.8.2"), 1);
   staticRoutingB->AddHostRouteTo (Ipv4Address ("10.1.8.2"), 2);
   staticRoutingD->AddHostRouteTo (Ipv4Address ("10.1.8.2"), 2);
-  //////
-
   std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double> argA, argA_2;
   argA = std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double>(staticRoutingA, Ipv4Address ("10.1.8.2"), 3, 0.7);
   argA_2 = std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double>(staticRoutingA, Ipv4Address ("10.1.8.2"), 1, 0.3);
   dAdB.Get (0)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&ChangeRoute, argA));
   dAdD.Get (0)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&ChangeRoute, argA_2));
+  //////
 
   uint16_t port = 9;
   OnOffHelper onoff ("ns3::UdpSocketFactory", 
@@ -170,18 +169,19 @@ main (int argc, char *argv[])
   sourceApps3.Start (Seconds (0.0));
   sourceApps3.Stop (Seconds (10.0));
 
-  // Create a packet sink to receive these packets
+// Create a packet sink to receive these packets
   PacketSinkHelper sink ("ns3::UdpSocketFactory",
                         Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
   ApplicationContainer apps = sink.Install(c.Get (5));
   apps.Start (Seconds (1.0));
   apps.Stop (Seconds (10.0));
+
   PacketSinkHelper sink2 ("ns3::UdpSocketFactory",
                         Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
   ApplicationContainer apps2 = sink2.Install(c.Get (4));
   apps2.Start (Seconds (1.0));
   apps2.Stop (Seconds (10.0));
-
+//
 
 // Animation settings
   AnimationInterface::SetConstantPosition (c.Get (0),1.0,2.0);
