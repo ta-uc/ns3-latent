@@ -1,11 +1,9 @@
-// Test program for this 3-router scenario, using static routing
-//
-// (a.a.a.a/32)A <-- x.x.x.0/30 --> B <-- y.y.y.0/30 --> C(c.c.c.c/32)
-
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <cassert>
+#include <stdlib.h>
+#include <time.h>
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -19,19 +17,24 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("StaticRoutingSlash32Test");
+NS_LOG_COMPONENT_DEFINE ("Multipath staticrouging");
 
-void ChangeRoute (Ptr<Ipv4StaticRouting> rt, int mode)
+void ChangeRoute (std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double> arg, Ptr<ns3::Packet const> pkt)
 {
-  rt->RemoveRoute(3);
-  if (mode)
+  int i;
+  for (i = 0; i < std::get<0>(arg)->GetNRoutes (); i++)
   {
-    rt->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.3.2"), 2);
-  }else
-  {
-    rt->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.1.2"), 1);
+    if (std::get<0>(arg)->GetRoute (i).IsHost () && std::get<0>(arg)->GetRoute (i).GetDest () == std::get<1>(arg))
+    {
+      if ( (double)rand()/RAND_MAX <= 1 - std::get<3>(arg) ) {
+        std::get<0>(arg)->AddHostRouteTo (std::get<0>(arg)->GetRoute (i).GetDest (), std::get<2>(arg));
+        std::get<0>(arg)->RemoveRoute (i);
+      }
+      break;
+    }
   }
 }
+
 
 int 
 main (int argc, char *argv[])
@@ -42,30 +45,39 @@ main (int argc, char *argv[])
   CommandLine cmd;
   cmd.Parse (argc, argv);
 
-  Ptr<Node> nA = CreateObject<Node> ();
-  Ptr<Node> nB = CreateObject<Node> ();
-  Ptr<Node> nC = CreateObject<Node> ();
-  Ptr<Node> nD = CreateObject<Node> ();
+  srand((unsigned)time(NULL));
 
-  NodeContainer c = NodeContainer (nA, nB, nC, nD);
+  NodeContainer c;
+  c.Create (7);
 
   InternetStackHelper internet;
   internet.Install (c);
 
   // Point-to-point links
-  NodeContainer nAnB = NodeContainer (nA, nB);
-  NodeContainer nAnC = NodeContainer (nA, nC);
-  NodeContainer nBnD = NodeContainer (nB, nD);
-  NodeContainer nCnD = NodeContainer (nC, nD);
+  NodeContainer nAnB = NodeContainer (c.Get (0), c.Get (1));
+  NodeContainer nAnC = NodeContainer (c.Get (0), c.Get (2));
+  NodeContainer nAnD = NodeContainer (c.Get (0), c.Get (3));
+  NodeContainer nBnE = NodeContainer (c.Get (1), c.Get (4));
+  NodeContainer nBnF = NodeContainer (c.Get (1), c.Get (5));
+  NodeContainer nCnE = NodeContainer (c.Get (2), c.Get (4));
+  NodeContainer nCnF = NodeContainer (c.Get (2), c.Get (5));
+  NodeContainer nDnE = NodeContainer (c.Get (3), c.Get (4));
+  NodeContainer nDnF = NodeContainer (c.Get (3), c.Get (5));
+  NodeContainer nGnA = NodeContainer (c.Get (6), c.Get (0));
 
-  // We create the channels first without any IP addressing information
   PointToPointHelper p2p;
   p2p.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
-  p2p.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  p2p.SetChannelAttribute ("Delay", StringValue ("1ms"));
   NetDeviceContainer dAdB = p2p.Install (nAnB);
   NetDeviceContainer dAdC = p2p.Install (nAnC);
-  NetDeviceContainer dBdD = p2p.Install (nBnD);
-  NetDeviceContainer dCdD = p2p.Install (nCnD);
+  NetDeviceContainer dAdD = p2p.Install (nAnD);
+  NetDeviceContainer dBdE = p2p.Install (nBnE);
+  NetDeviceContainer dBdF = p2p.Install (nBnF);
+  NetDeviceContainer dCdE = p2p.Install (nCnE);
+  NetDeviceContainer dCdF = p2p.Install (nCnF);
+  NetDeviceContainer dDdE = p2p.Install (nDnE);
+  NetDeviceContainer dDdF = p2p.Install (nDnF);
+  NetDeviceContainer dGdA = p2p.Install (nGnA);
 
   // Later, we add IP addresses.
   Ipv4AddressHelper ipv4;
@@ -73,71 +85,120 @@ main (int argc, char *argv[])
   Ipv4InterfaceContainer iAiB = ipv4.Assign (dAdB);
 
   ipv4.SetBase ("10.1.2.0", "255.255.255.0");
-  Ipv4InterfaceContainer iBiD = ipv4.Assign (dBdD);
-
-  ipv4.SetBase ("10.1.3.0", "255.255.255.0");
   Ipv4InterfaceContainer iAiC = ipv4.Assign (dAdC);
 
+  ipv4.SetBase ("10.1.3.0", "255.255.255.0");
+  Ipv4InterfaceContainer iAiD = ipv4.Assign (dAdD);
+
   ipv4.SetBase ("10.1.4.0", "255.255.255.0");
-  Ipv4InterfaceContainer iCiD = ipv4.Assign (dCdD);
+  Ipv4InterfaceContainer iBiE = ipv4.Assign (dBdE);
+  
+  ipv4.SetBase ("10.1.5.0", "255.255.255.0");
+  Ipv4InterfaceContainer iBiF = ipv4.Assign (dBdF);
 
-  Ptr<Ipv4> ipv4A = nA->GetObject<Ipv4> ();
-  Ptr<Ipv4> ipv4B = nB->GetObject<Ipv4> ();
-  Ptr<Ipv4> ipv4C = nC->GetObject<Ipv4> ();
-  Ptr<Ipv4> ipv4D = nD->GetObject<Ipv4> ();
+  ipv4.SetBase ("10.1.6.0", "255.255.255.0");
+  Ipv4InterfaceContainer iCiE = ipv4.Assign (dCdE);
 
+  ipv4.SetBase ("10.1.7.0", "255.255.255.0");
+  Ipv4InterfaceContainer iCiF = ipv4.Assign (dCdF);
+  
+  ipv4.SetBase ("10.1.8.0", "255.255.255.0");
+  Ipv4InterfaceContainer iDiE = ipv4.Assign (dDdE);
+  
+  ipv4.SetBase ("10.1.9.0", "255.255.255.0");
+  Ipv4InterfaceContainer iDiF = ipv4.Assign (dDdF);
+  
+  ipv4.SetBase ("10.1.10.0", "255.255.255.0");
+  Ipv4InterfaceContainer iGiA = ipv4.Assign (dGdA);
+
+  Ptr<Ipv4> ipv4A = c.Get (0)->GetObject<Ipv4> ();
+  Ptr<Ipv4> ipv4B = c.Get (1)->GetObject<Ipv4> ();
+  Ptr<Ipv4> ipv4C = c.Get (2)->GetObject<Ipv4> ();
+  Ptr<Ipv4> ipv4D = c.Get (3)->GetObject<Ipv4> ();
+  Ptr<Ipv4> ipv4G = c.Get (6)->GetObject<Ipv4> ();
+
+  std::cout << ipv4A->GetAddress (2,0).GetLocal () << std::endl; 
   Ipv4StaticRoutingHelper ipv4RoutingHelper;
-  // Create static routes from A to D
-  
   Ptr<Ipv4StaticRouting> staticRoutingA = ipv4RoutingHelper.GetStaticRouting (ipv4A);
-  // The ifIndex for this outbound route is 1; the first p2p link added
-  staticRoutingA->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.1.2"), 1);
-
-  bool b = 1;
-  for (int i = 1; i < 10; i++)
-  {
-    Simulator::Schedule (Time ( Seconds (i)), &ChangeRoute, staticRoutingA, b);
-    b = !b;
-  }
-  
   Ptr<Ipv4StaticRouting> staticRoutingB = ipv4RoutingHelper.GetStaticRouting (ipv4B);
-  // The ifIndex we want on node B is 2; 0 corresponds to loopback, and 1 to the first point to point link
-  staticRoutingB->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.2.2"), 2);
-  
   Ptr<Ipv4StaticRouting> staticRoutingC = ipv4RoutingHelper.GetStaticRouting (ipv4C);
-  staticRoutingC->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.4.2"), 2);
+  Ptr<Ipv4StaticRouting> staticRoutingD = ipv4RoutingHelper.GetStaticRouting (ipv4D);
+  Ptr<Ipv4StaticRouting> staticRoutingG = ipv4RoutingHelper.GetStaticRouting (ipv4G);
+  
+  // // Create static routes from A to F (G->A->D->F) ///TEST
+  staticRoutingG->AddHostRouteTo (Ipv4Address ("10.1.7.2"), 1);
+  staticRoutingA->AddHostRouteTo (Ipv4Address ("10.1.7.2"), 3);
+  staticRoutingD->AddHostRouteTo (Ipv4Address ("10.1.7.2"), 3);
+  // //////
 
-  // Create the OnOff application to send UDP datagrams of size
-  // 210 bytes at a rate of 448 Kb/s
-  uint16_t port = 9;   // Discard port (RFC 863)
+  // Create static routes from A to F (A->C->F)
+  staticRoutingA->AddHostRouteTo (Ipv4Address ("10.1.7.2"), 2);
+  staticRoutingC->AddHostRouteTo (Ipv4Address ("10.1.7.2"), 3);
+  //////
+
+  // Create static routes from A to E (A->B->E, A->D->E)
+  staticRoutingA->AddHostRouteTo (Ipv4Address ("10.1.8.2"), 1);
+  staticRoutingB->AddHostRouteTo (Ipv4Address ("10.1.8.2"), 2);
+  staticRoutingD->AddHostRouteTo (Ipv4Address ("10.1.8.2"), 2);
+  //////
+
+  std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double> argA, argA_2;
+  argA = std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double>(staticRoutingA, Ipv4Address ("10.1.8.2"), 3, 0.7);
+  argA_2 = std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double>(staticRoutingA, Ipv4Address ("10.1.8.2"), 1, 0.3);
+  dAdB.Get (0)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&ChangeRoute, argA));
+  dAdD.Get (0)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&ChangeRoute, argA_2));
+
+  uint16_t port = 9;
   OnOffHelper onoff ("ns3::UdpSocketFactory", 
-                      Address (InetSocketAddress (Ipv4Address("10.1.4.2"), port)));
+                          InetSocketAddress ("10.1.7.2", port));
   onoff.SetConstantRate (DataRate (10000));
-  ApplicationContainer apps = onoff.Install (nA);
-  apps.Start (Seconds (1.0));
-  apps.Stop (Seconds (10.0));
+  ApplicationContainer sourceApps = onoff.Install (c.Get (0));
+  sourceApps.Start (Seconds (0.0));
+  sourceApps.Stop (Seconds (10.0));
+
+  OnOffHelper onoff2 ("ns3::UdpSocketFactory", 
+                          InetSocketAddress ("10.1.8.2", port));
+  onoff2.SetConstantRate (DataRate (10000));
+  ApplicationContainer sourceApps2 = onoff2.Install (c.Get (0));
+  sourceApps2.Start (Seconds (0.0));
+  sourceApps2.Stop (Seconds (10.0));
+
+  OnOffHelper onoff3 ("ns3::UdpSocketFactory", 
+                          InetSocketAddress ("10.1.7.2", port));
+  onoff3.SetConstantRate (DataRate (20000));
+  ApplicationContainer sourceApps3 = onoff3.Install (c.Get (6));
+  sourceApps3.Start (Seconds (0.0));
+  sourceApps3.Stop (Seconds (10.0));
 
   // Create a packet sink to receive these packets
   PacketSinkHelper sink ("ns3::UdpSocketFactory",
                         Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
-  apps = sink.Install (nD);
+  ApplicationContainer apps = sink.Install(c.Get (5));
   apps.Start (Seconds (1.0));
   apps.Stop (Seconds (10.0));
+  PacketSinkHelper sink2 ("ns3::UdpSocketFactory",
+                        Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
+  ApplicationContainer apps2 = sink2.Install(c.Get (4));
+  apps2.Start (Seconds (1.0));
+  apps2.Stop (Seconds (10.0));
+
 
 // Animation settings
-  AnimationInterface::SetConstantPosition (c.Get (0),0.0,2.0);
-  AnimationInterface::SetConstantPosition (c.Get (1),2.0,1.0);
-  AnimationInterface::SetConstantPosition (c.Get (2),2.0,3.0);
-  AnimationInterface::SetConstantPosition (c.Get (3),4.0,2.0);
+  AnimationInterface::SetConstantPosition (c.Get (0),1.0,2.0);
+  AnimationInterface::SetConstantPosition (c.Get (1),3.0,1.0);
+  AnimationInterface::SetConstantPosition (c.Get (2),3.0,2.0);
+  AnimationInterface::SetConstantPosition (c.Get (3),3.0,3.0);
+  AnimationInterface::SetConstantPosition (c.Get (4),5.0,1.5);
+  AnimationInterface::SetConstantPosition (c.Get (5),5.0,2.5);
+  AnimationInterface::SetConstantPosition (c.Get (6),0.0,2.0);
   AnimationInterface anim ("./Data/static-route.xml");
 //Animation settings end
 
-//  AsciiTraceHelper ascii;
+ AsciiTraceHelper ascii;
 //  p2p.EnableAsciiAll (ascii.CreateFileStream ("static-routing-slash32.tr"));
 //  p2p.EnablePcapAll ("static-routing-slash32");
-
+  Simulator::Stop (Seconds (10));
   Simulator::Run ();
   Simulator::Destroy ();
-
   return 0;
 }
