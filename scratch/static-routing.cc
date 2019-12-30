@@ -153,8 +153,8 @@ MyApp::SendPacket (void)
   if(++m_packetsSent % 10 == 0)   // １データ送信でコネクション終了
   {
     StopApplication ();
-    double lossRate = m_packetLoss / (double) m_tcpsent;
-    ChangeDataRate (lossRate);
+    // double lossRate = m_packetLoss / (double) m_tcpsent;
+    // ChangeDataRate (lossRate);
     if (m_packetsSent < m_nPackets)
     {
         Simulator::ScheduleNow (&MyApp::ReConnect,this);
@@ -202,16 +202,25 @@ MyApp::CountTCPTx (const Ptr<const Packet> packet, const TcpHeader &header, cons
   }
 }
 
-void ChangeRoute (std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double> arg, Ptr<ns3::Packet const> pkt)
+void ChangeRoute (std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, Ipv4Address, int, double> arg,
+ std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > trace,
+ const Ipv4Header &header,
+ Ptr< const Packet > packet,
+ uint32_t interface)
 {
   int i;
-  for (i = 0; i < std::get<0>(arg)->GetNRoutes (); i++)
+  std::cout << header.GetSource () << std::endl;
+  Ptr<Ipv4StaticRouting> r = std::get<0>(arg);
+  for (i = 0; i < r->GetNRoutes (); i++)
   {
-    if (std::get<0>(arg)->GetRoute (i).IsHost () && std::get<0>(arg)->GetRoute (i).GetDest () == std::get<1>(arg))
+    if (r->GetRoute (i).IsHost () &&
+        r->GetRoute (i).GetDest ().IsEqual (std::get<1>(arg)) &&
+        r->GetRoute (i).GetSource ().IsEqual (std::get<2>(arg))
+       )
     {
-      if ( (double)rand()/RAND_MAX <= 1 - std::get<3>(arg) ) {
-        std::get<0>(arg)->AddHostRouteTo (std::get<0>(arg)->GetRoute (i).GetDest (), std::get<2>(arg));
-        std::get<0>(arg)->RemoveRoute (i);
+      if ( (double)rand()/RAND_MAX <= 1 - std::get<4>(arg) ) {
+        r->AddHostRouteTo (r->GetRoute (i).GetDest (), r->GetRoute(i).GetSource (), std::get<3>(arg));
+        r->RemoveRoute (i);
       }
       break;
     }
@@ -311,39 +320,18 @@ main (int argc, char *argv[])
     staticRoutingC->AddHostRouteTo (Ipv4Address ("10.1.7.2"),AC_A, 3);
   //
 
-  for (int i = 0; i < staticRoutingA->GetNRoutes (); i++)
-  {
-    std::cout << "A-" << std::endl;
-    std::cout << staticRoutingA->GetRoute (i) << std::endl;
-  }
-  for (int i = 0; i < staticRoutingC->GetNRoutes (); i++)
-  {
-    std::cout << "C-" << std::endl;
-    std::cout << staticRoutingC->GetRoute (i) << std::endl;
-  }
-  for (int i = 0; i < staticRoutingD->GetNRoutes (); i++)
-  {
-    std::cout << "D-" << std::endl;
-    std::cout << staticRoutingD->GetRoute (i) << std::endl;
-  }
-  for (int i = 0; i < staticRoutingG->GetNRoutes (); i++)
-  {
-    std::cout << "G-" << std::endl;
-    std::cout << staticRoutingG->GetRoute (i) << std::endl;
-  }
-  
-
   // Create static routes from A to E (A->B->E, A->D->E)
-    // staticRoutingA->AddHostRouteTo (Ipv4Address ("10.1.1.1"),Ipv4Address ("10.1.8.2"), 1);
-    // staticRoutingB->AddHostRouteTo (Ipv4Address ("10.1.1.1"),Ipv4Address ("10.1.8.2"), 2);
-    // staticRoutingD->AddHostRouteTo (Ipv4Address ("10.1.1.1"),Ipv4Address ("10.1.8.2"), 2);
-    // std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double> argA, argA_2;
-    // argA = std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double>(staticRoutingA, Ipv4Address ("10.1.8.2"), 3, 0.7);
-    // argA_2 = std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, int, double>(staticRoutingA, Ipv4Address ("10.1.8.2"), 1, 0.3);
-    // dAdB.Get (0)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&ChangeRoute, argA));
-    // dAdD.Get (0)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&ChangeRoute, argA_2));
+    staticRoutingA->AddHostRouteTo (Ipv4Address ("10.1.4.2"), fromLocal, 1); // A->B
+    staticRoutingB->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.1.1"), 2);
+    staticRoutingD->AddHostRouteTo (Ipv4Address ("10.1.4.2"), Ipv4Address ("10.1.3.1"), 2);
+    std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, Ipv4Address, int, double> argA_1, argA_2;
+    argA_1 = std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, Ipv4Address, int, double>(staticRoutingA, Ipv4Address ("10.1.4.2"), fromLocal, 3, 0);
+    argA_2 = std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, Ipv4Address, int, double>(staticRoutingA, Ipv4Address ("10.1.4.2"), fromLocal, 1, 0);
   //
-
+    // dAdB.Get (0)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&ChangeRoute, argA_1));
+    // dAdD.Get (0)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&ChangeRoute, argA_2));
+    Config::Connect ("/NodeList/0/$ns3::Ipv4L3Protocol/SendOutgoing", MakeBoundCallback(&ChangeRoute, argA_2));
+    Config::Connect ("/NodeList/0/$ns3::Ipv4L3Protocol/UnicastForward", MakeBoundCallback(&ChangeRoute, argA_2));
   //Install sink App
     uint16_t sinkPort = 9;
     PacketSinkHelper packetSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
@@ -354,13 +342,13 @@ main (int argc, char *argv[])
 
   //Install Source App
     TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-    Ptr<MyApp> app = CreateObject<MyApp> ();
-    Ptr<Node> installTo = c.Get (0);
-    Address sinkAddress = InetSocketAddress (iCiF.GetAddress (1), sinkPort);
-    app->Setup (tid, installTo ,sinkAddress, 1300, 50, DataRate ("500Kbps"), "A->C->F");
-    installTo->AddApplication (app);
-    app->SetStartTime (Seconds (0));
-    app->SetStopTime (Seconds (10));
+    // Ptr<MyApp> app = CreateObject<MyApp> ();
+    // Ptr<Node> installTo = c.Get (0);
+    // Address sinkAddress = InetSocketAddress (iCiF.GetAddress (1), sinkPort);
+    // app->Setup (tid, installTo ,sinkAddress, 1300, 50, DataRate ("500Kbps"), "A->C->F");
+    // installTo->AddApplication (app);
+    // app->SetStartTime (Seconds (0));
+    // app->SetStopTime (Seconds (10));
 
     Ptr<MyApp> app2 = CreateObject<MyApp> ();
     Ptr<Node> installTo2 = c.Get (6);
@@ -369,6 +357,14 @@ main (int argc, char *argv[])
     installTo2->AddApplication (app2);
     app2->SetStartTime (Seconds (0));
     app2->SetStopTime (Seconds (10));
+
+    Ptr<MyApp> app3 = CreateObject<MyApp> ();
+    Ptr<Node> installTo3 = c.Get (0);
+    Address sinkAddress3 = InetSocketAddress (iBiE.GetAddress (1), sinkPort);
+    app3->Setup (tid, installTo3 ,sinkAddress3, 1300, 50, DataRate ("500Kbps"), "A->E");
+    installTo3->AddApplication (app3);
+    app3->SetStartTime (Seconds (0));
+    app3->SetStopTime (Seconds (10));
   //
 
   // Animation settings
