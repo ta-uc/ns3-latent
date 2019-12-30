@@ -119,8 +119,8 @@ MyApp::Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, u
 
   AsciiTraceHelper ascii;
   // m_cwndStream = ascii.CreateFileStream ("./Data/"+m_name+".cwnd");
-  m_datarateStream = ascii.CreateFileStream ("./Data/"+m_name+".drate");
-  m_lossStream = ascii.CreateFileStream ("./Data/"+m_name+".loss");
+  // m_datarateStream = ascii.CreateFileStream ("./Data/"+m_name+".drate");
+  // m_lossStream = ascii.CreateFileStream ("./Data/"+m_name+".loss");
 }
 
 void
