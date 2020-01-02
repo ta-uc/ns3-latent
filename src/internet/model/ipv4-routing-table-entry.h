@@ -25,7 +25,10 @@
 #include <ostream>
 
 #include "ns3/ipv4-address.h"
-
+// typedef std::tuple<
+//     std::vector <int>,
+//     std::vector <double>
+//   > rvector;
 namespace ns3 {
 
 /**
@@ -89,6 +92,8 @@ public:
    * \return The Ipv4 interface number used for sending outgoing packets
    */
   uint32_t GetInterface (void) const;
+  std::vector<int> GetInterfaces (void) const;
+  std::vector<double> GetInterProbs (void) const;
   /**
    * \return An Ipv4RoutingTableEntry object corresponding to the input parameters.
    * \param dest Ipv4Address of the destination
@@ -119,13 +124,19 @@ public:
    * \return An Ipv4RoutingTableEntry object corresponding to the input parameters.
    * \param network Ipv4Address of the destination network
    * \param networkMask Ipv4Mask of the destination network mask
-   * \param nextHop Ipv4Address of the next hop
+   * \param source Ipv4Address of the source node interface
    * \param interface Outgoing interface 
    */
   static Ipv4RoutingTableEntry CreateNetworkRouteTo (Ipv4Address network, 
                                                      Ipv4Mask networkMask,
-                                                     Ipv4Address nextHop,
+                                                     Ipv4Address source,
                                                      uint32_t interface);
+
+  static Ipv4RoutingTableEntry CreateNetworkRouteTo (Ipv4Address network, 
+                                                     Ipv4Mask networkMask,
+                                                     Ipv4Address source,
+                                                    //  rvector routing,
+                                                     std::tuple<std::vector <int>,std::vector <double>> routing);
   /**
    * \return An Ipv4RoutingTableEntry object corresponding to the input parameters.
    * \param network Ipv4Address of the destination network
@@ -157,6 +168,13 @@ private:
                          Ipv4Mask mask,
                          Ipv4Address gateway,
                          uint32_t interface);
+
+  //myIpv4RoutingTableEntry
+  Ipv4RoutingTableEntry (Ipv4Address network,
+                         Ipv4Mask mask,
+                         Ipv4Address source,
+                        //  rvector routing,
+                         std::tuple<std::vector <int>,std::vector <double>> routing);
   /**
    * \brief Constructor.
    * \param dest destination address
@@ -182,7 +200,7 @@ private:
    */
   Ipv4RoutingTableEntry (Ipv4Address dest,
                          uint32_t interface);
-
+  std::tuple<std::vector <int>,std::vector <double>> m_routing;
   Ipv4Address m_source;
   Ipv4Address m_dest;         //!< destination address
   Ipv4Mask m_destNetworkMask; //!< destination network mask

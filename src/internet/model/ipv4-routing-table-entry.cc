@@ -88,6 +88,19 @@ Ipv4RoutingTableEntry::Ipv4RoutingTableEntry (Ipv4Address network,
 
 Ipv4RoutingTableEntry::Ipv4RoutingTableEntry (Ipv4Address network,
                                               Ipv4Mask networkMask,
+                                              Ipv4Address source,
+                                              rvector routing)
+  : m_routing (routing),
+    m_source (source),
+    m_dest (network),
+    m_destNetworkMask (networkMask),
+    m_gateway (Ipv4Address::GetZero ())
+{
+  // NS_LOG_FUNCTION (this << network << networkMask << gateway << interface);
+}
+
+Ipv4RoutingTableEntry::Ipv4RoutingTableEntry (Ipv4Address network,
+                                              Ipv4Mask networkMask,
                                               uint32_t interface)
   : m_dest (network),
     m_destNetworkMask (networkMask),
@@ -180,6 +193,18 @@ Ipv4RoutingTableEntry::GetInterface (void) const
   return m_interface;
 }
 
+//myfuncs
+std::vector <int>
+Ipv4RoutingTableEntry::GetInterfaces (void) const
+{
+  return std::get<0>(m_routing);
+}
+std::vector <double>
+Ipv4RoutingTableEntry::GetInterProbs (void) const
+{
+  return std::get<1>(m_routing);
+}
+
 Ipv4RoutingTableEntry 
 Ipv4RoutingTableEntry::CreateHostRouteTo (Ipv4Address dest, 
                                           Ipv4Address nextHop,
@@ -201,22 +226,23 @@ Ipv4RoutingTableEntry
 Ipv4RoutingTableEntry::CreateNetworkRouteTo (Ipv4Address network, 
                                              Ipv4Mask networkMask,
                                              Ipv4Address source,
+                                             rvector routing)
+{
+  NS_LOG_FUNCTION_NOARGS ();
+  return Ipv4RoutingTableEntry (network, networkMask, 
+                                source, routing);
+}
+Ipv4RoutingTableEntry 
+Ipv4RoutingTableEntry::CreateNetworkRouteTo (Ipv4Address network, 
+                                             Ipv4Mask networkMask,
+                                             Ipv4Address source,
                                              uint32_t interface)
 {
   NS_LOG_FUNCTION_NOARGS ();
   return Ipv4RoutingTableEntry (network, networkMask, 
                                 source, interface);
 }
-// Ipv4RoutingTableEntry 
-// Ipv4RoutingTableEntry::CreateNetworkRouteTo (Ipv4Address network, 
-//                                              Ipv4Mask networkMask,
-//                                              Ipv4Address nextHop,
-//                                              uint32_t interface)
-// {
-//   NS_LOG_FUNCTION_NOARGS ();
-//   return Ipv4RoutingTableEntry (network, networkMask, 
-//                                 nextHop, interface);
-// }
+
 Ipv4RoutingTableEntry 
 Ipv4RoutingTableEntry::CreateNetworkRouteTo (Ipv4Address network, 
                                              Ipv4Mask networkMask,

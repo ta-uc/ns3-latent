@@ -204,13 +204,13 @@ MyApp::CountTCPTx (const Ptr<const Packet> packet, const TcpHeader &header, cons
   }
 }
 
-typedef std::vector<
-  std::tuple<
-    std::vector <int>,
-    std::vector <double>
-  >
-> rvector;
-rvector routing;
+// typedef std::vector<
+//   std::tuple<
+//     std::vector <int>,
+//     std::vector <double>
+//   >
+// > rvector;
+// rvector routing;
 
 typedef std::tuple<
   Ptr<Ipv4StaticRouting>,
@@ -219,99 +219,99 @@ typedef std::tuple<
   int
 > rArgs;
 
-void ChangeRouteFromOther (std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, Ipv4Address, int> arg,
- std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > trace,
- const Ipv4Header &header,
- Ptr< const Packet > packet,
- uint32_t interface)
-{
-  int i;
-  Ptr<Ipv4StaticRouting> r = std::get<0>(arg);
-  for (i = 0; i < r->GetNRoutes (); i++)
-  {
-    if ( r->GetRoute (i).IsHost () &&
-         r->GetRoute (i).GetDest ().IsEqual (header.GetDestination ()) &&
-         r->GetRoute (i).GetSource ().IsEqual (header.GetSource ())
-       )
-    {
-      int nRouting = std::get<3> (arg);
-      std::vector <double> argProbs = std::get<1>(routing[nRouting]);
-      std::vector <int> oifs = std::get<0>(routing[nRouting]);
-      double random = (double)rand()/RAND_MAX;
-      double start = 0;
-      double end = 0;
-      for (int j = 0; j < routing.size (); j++)
-      {
-        if (start == 0)
-        {
-          if (0 <= random && random < argProbs[j])
-          {
-            r->AddHostRouteTo (r->GetRoute (i).GetDest (), r->GetRoute(i).GetSource (), oifs[j]);
-            r->RemoveRoute (i);
-            break;
-          }
-        } else {
-          start += argProbs[j-1];
-          end = start + argProbs[j];
-          if (start <= random && random < end)
-          {
-            r->AddHostRouteTo (r->GetRoute (i).GetDest (), r->GetRoute(i).GetSource (), oifs[j]);
-            r->RemoveRoute (i);
-            break;
-          }
-        }
-      }
-      break;
-    }
-  }
-}
+// void ChangeRouteFromOther (std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, Ipv4Address, int> arg,
+//  std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > trace,
+//  const Ipv4Header &header,
+//  Ptr< const Packet > packet,
+//  uint32_t interface)
+// {
+//   int i;
+//   Ptr<Ipv4StaticRouting> r = std::get<0>(arg);
+//   for (i = 0; i < r->GetNRoutes (); i++)
+//   {
+//     if ( r->GetRoute (i).IsHost () &&
+//          r->GetRoute (i).GetDest ().IsEqual (header.GetDestination ()) &&
+//          r->GetRoute (i).GetSource ().IsEqual (header.GetSource ())
+//        )
+//     {
+//       int nRouting = std::get<3> (arg);
+//       std::vector <double> argProbs = std::get<1>(routing[nRouting]);
+//       std::vector <int> oifs = std::get<0>(routing[nRouting]);
+//       double random = (double)rand()/RAND_MAX;
+//       double start = 0;
+//       double end = 0;
+//       for (int j = 0; j < routing.size (); j++)
+//       {
+//         if (start == 0)
+//         {
+//           if (0 <= random && random < argProbs[j])
+//           {
+//             r->AddHostRouteTo (r->GetRoute (i).GetDest (), r->GetRoute(i).GetSource (), oifs[j]);
+//             r->RemoveRoute (i);
+//             break;
+//           }
+//         } else {
+//           start += argProbs[j-1];
+//           end = start + argProbs[j];
+//           if (start <= random && random < end)
+//           {
+//             r->AddHostRouteTo (r->GetRoute (i).GetDest (), r->GetRoute(i).GetSource (), oifs[j]);
+//             r->RemoveRoute (i);
+//             break;
+//           }
+//         }
+//       }
+//       break;
+//     }
+//   }
+// }
 
-void ChangeRouteOwn (std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, Ipv4Address, int> arg,
- std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > trace,
- const Ipv4Header &header,
- Ptr< const Packet > packet,
- uint32_t interface)
-{
-  int i;
-  Ptr<Ipv4StaticRouting> r = std::get<0>(arg);
-  for (i = 0; i < r->GetNRoutes (); i++)
-  {
-    if ( r->GetRoute (i).IsHost () &&
-         r->GetRoute (i).GetDest ().IsEqual (header.GetDestination ()) &&
-         r->GetRoute (i).GetSource ().IsEqual (Ipv4Address ("102.102.102.102"))
-       )
-    {
-      int nRouting = std::get<3> (arg);
-      std::vector <double> argProbs = std::get<1>(routing[nRouting]);
-      std::vector <int> oifs = std::get<0>(routing[nRouting]);
-      double random = (double)rand()/RAND_MAX;
-      double start = 0;
-      double end = 0;
-      for (int j = 0; j < argProbs.size (); j++)
-      {
-        if (j == 0)
-        {
-          if (0 <= random && random < argProbs[j])
-          {
-            r->AddHostRouteTo (r->GetRoute (i).GetDest (), r->GetRoute(i).GetSource (), oifs[j]);
-            r->RemoveRoute (i);
-            break;
-          }
-        } else {
-          start += argProbs[j-1];
-          end = start + argProbs[j];
-          if (start <= random && random < end)
-          {
-            r->AddHostRouteTo (r->GetRoute (i).GetDest (), r->GetRoute(i).GetSource (), oifs[j]);
-            r->RemoveRoute (i);
-            break;
-          }
-        }
-      }
-      break;
-    }
-  }
-}
+// void ChangeRouteOwn (std::tuple<Ptr<Ipv4StaticRouting>, Ipv4Address, Ipv4Address, int> arg,
+//  std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > trace,
+//  const Ipv4Header &header,
+//  Ptr< const Packet > packet,
+//  uint32_t interface)
+// {
+//   int i;
+//   Ptr<Ipv4StaticRouting> r = std::get<0>(arg);
+//   for (i = 0; i < r->GetNRoutes (); i++)
+//   {
+//     if ( r->GetRoute (i).IsHost () &&
+//          r->GetRoute (i).GetDest ().IsEqual (header.GetDestination ()) &&
+//          r->GetRoute (i).GetSource ().IsEqual (Ipv4Address ("102.102.102.102"))
+//        )
+//     {
+//       int nRouting = std::get<3> (arg);
+//       std::vector <double> argProbs = std::get<1>(routing[nRouting]);
+//       std::vector <int> oifs = std::get<0>(routing[nRouting]);
+//       double random = (double)rand()/RAND_MAX;
+//       double start = 0;
+//       double end = 0;
+//       for (int j = 0; j < argProbs.size (); j++)
+//       {
+//         if (j == 0)
+//         {
+//           if (0 <= random && random < argProbs[j])
+//           {
+//             r->AddHostRouteTo (r->GetRoute (i).GetDest (), r->GetRoute(i).GetSource (), oifs[j]);
+//             r->RemoveRoute (i);
+//             break;
+//           }
+//         } else {
+//           start += argProbs[j-1];
+//           end = start + argProbs[j];
+//           if (start <= random && random < end)
+//           {
+//             r->AddHostRouteTo (r->GetRoute (i).GetDest (), r->GetRoute(i).GetSource (), oifs[j]);
+//             r->RemoveRoute (i);
+//             break;
+//           }
+//         }
+//       }
+//       break;
+//     }
+//   }
+// }
 
 
 int 
@@ -322,16 +322,16 @@ main (int argc, char *argv[])
 
   srand((unsigned)time(NULL));
 
-  std::vector<int> t;
-  std::vector<double> t2;
+  // std::vector<int> t;
+  // std::vector<double> t2;
 
-  t = {1,2,3};
-  t2 = {0.8,0.1,0.1};
-  routing.push_back(std::make_tuple(t,t2));
+  // t = {1,2,3};
+  // t2 = {0.8,0.1,0.1};
+  // routing.push_back(std::make_tuple(t,t2));
 
-  t = {1,2,3};
-  t2 = {0,0,1};
-  routing.push_back(std::make_tuple(t,t2));
+  // t = {1,2,3};
+  // t2 = {0,0,1};
+  // routing.push_back(std::make_tuple(t,t2));
 
   NodeContainer c;
   c.Create (7);
@@ -409,31 +409,38 @@ main (int argc, char *argv[])
   Ipv4Address BE_E = iBiE.GetAddress (1,0);
   Ipv4Address CF_F = iCiF.GetAddress (1,0);
   Ipv4Address GA_G = iGiA.GetAddress (0,0);
-  
+  // typedef std::tuple<
+  //   std::vector <int>,
+  //   std::vector <double>
+  // > rvector;
+  std::tuple<std::vector <int>,std::vector <double>> t,t2,t3,t4;
+  t = std::tuple<std::vector <int>,std::vector <double>> ({1},{1.0});
+  t2 = std::tuple<std::vector <int>,std::vector <double>> ({1},{1.0});
+
   // Create static routes from A to F (G->A->D->F) ///TEST
-    staticRoutingG->AddHostRouteTo (CF_F, fromLocal, 1);
+    staticRoutingG->AddHostRouteTo (CF_F, fromLocal,t);
     staticRoutingA->AddHostRouteTo (CF_F, GA_G, 3);
     staticRoutingD->AddHostRouteTo (CF_F, GA_G, 3);
   //
 
   // Create static routes from A to F (A->C->F)
-    staticRoutingA->AddHostRouteTo (CF_F, fromLocal, 2);
-    staticRoutingC->AddHostRouteTo (CF_F, AC_A, 3);
+    // staticRoutingA->AddHostRouteTo (CF_F, fromLocal, 2);
+    // staticRoutingC->AddHostRouteTo (CF_F, AC_A, 3);
   //
 
   // Create static routes from A to E (A->B->E, A->D->E)
-    staticRoutingA->AddHostRouteTo (BE_E, fromLocal, 1); // A->B
-    staticRoutingB->AddHostRouteTo (BE_E, AB_A, 2);
-    staticRoutingD->AddHostRouteTo (BE_E, AD_A, 2);
+    // staticRoutingA->AddHostRouteTo (BE_E, fromLocal, 1); // A->B
+    // staticRoutingB->AddHostRouteTo (BE_E, AB_A, 2);
+    // staticRoutingD->AddHostRouteTo (BE_E, AD_A, 2);
   //
 
-    rArgs argA, argB;
-    argA = rArgs (staticRoutingA, BE_E, AB_A, 0);
-    argB = rArgs (staticRoutingA, CF_F, GA_G, 1);
+    // rArgs argA, argB;
+    // argA = rArgs (staticRoutingA, BE_E, AB_A, 0);
+    // argB = rArgs (staticRoutingA, CF_F, GA_G, 1);
 
-    Config::Connect ("/NodeList/0/$ns3::Ipv4L3Protocol/SendOutgoing", MakeBoundCallback(&ChangeRouteOwn, argA));
+    // Config::Connect ("/NodeList/0/$ns3::Ipv4L3Protocol/SendOutgoing", MakeBoundCallback(&ChangeRouteOwn, argA));
     // Config::Connect ("/NodeList/0/$ns3::Ipv4L3Protocol/UnicastForward", MakeBoundCallback(&ChangeRouteFromOther, argA));
-    Config::Connect ("/NodeList/0/$ns3::Ipv4L3Protocol/UnicastForward", MakeBoundCallback(&ChangeRouteFromOther, argB));
+    // Config::Connect ("/NodeList/0/$ns3::Ipv4L3Protocol/UnicastForward", MakeBoundCallback(&ChangeRouteFromOther, argB));
   
   //Install sink App
     uint16_t sinkPort = 9;
@@ -461,13 +468,13 @@ main (int argc, char *argv[])
     app2->SetStartTime (Seconds (0));
     app2->SetStopTime (Seconds (10));
 
-    Ptr<MyApp> app3 = CreateObject<MyApp> ();
-    Ptr<Node> installTo3 = c.Get (0);
-    Address sinkAddress3 = InetSocketAddress (iBiE.GetAddress (1), sinkPort);
-    app3->Setup (tid, installTo3 ,sinkAddress3, 1300, 50, DataRate ("500Kbps"), "A->E");
-    installTo3->AddApplication (app3);
-    app3->SetStartTime (Seconds (0));
-    app3->SetStopTime (Seconds (10));
+    // Ptr<MyApp> app3 = CreateObject<MyApp> ();
+    // Ptr<Node> installTo3 = c.Get (0);
+    // Address sinkAddress3 = InetSocketAddress (iBiE.GetAddress (1), sinkPort);
+    // app3->Setup (tid, installTo3 ,sinkAddress3, 1300, 50, DataRate ("500Kbps"), "A->E");
+    // installTo3->AddApplication (app3);
+    // app3->SetStartTime (Seconds (0));
+    // app3->SetStopTime (Seconds (10));
   //
 
   // Animation settings

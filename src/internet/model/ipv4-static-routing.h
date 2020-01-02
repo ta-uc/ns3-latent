@@ -32,6 +32,11 @@
 #include "ns3/ipv4.h"
 #include "ns3/ipv4-routing-protocol.h"
 
+// typedef std::tuple<
+//     std::vector <int>,
+//     std::vector <double>
+//   > rvector;
+
 namespace ns3 {
 
 class Packet;
@@ -104,6 +109,14 @@ public:
                           Ipv4Address nextHop, 
                           uint32_t interface,
                           uint32_t metric = 0);
+                          
+  //myaddnetworkrouteto                        
+  void AddNetworkRouteTo (Ipv4Address network, 
+                          Ipv4Mask networkMask, 
+                          Ipv4Address source, 
+                          // rvector routing,
+                          std::tuple<std::vector <int>,std::vector <double>> routing,
+                          uint32_t metric = 0);
 
 /**
  * \brief Add a network route to the static routing table.
@@ -152,7 +165,8 @@ public:
 
   void AddHostRouteTo (Ipv4Address dest,
                        Ipv4Address source, 
-                       uint32_t interface,
+                      //  rvector routing,
+                       std::tuple<std::vector <int>,std::vector <double>> routing,
                        uint32_t metric = 0);
 /**
  * \brief Add a default route to the static routing table.

@@ -63,7 +63,7 @@ void
 Ipv4StaticRouting::AddNetworkRouteTo (Ipv4Address network, 
                                       Ipv4Mask networkMask, 
                                       Ipv4Address source, 
-                                      uint32_t interface,
+                                      std::tuple<std::vector <int>,std::vector <double>> routing,
                                       uint32_t metric)
 {
   // NS_LOG_FUNCTION (this << network << " " << networkMask << " " << nextHop << " " << interface << " " << metric);
@@ -71,7 +71,7 @@ Ipv4StaticRouting::AddNetworkRouteTo (Ipv4Address network,
   *route = Ipv4RoutingTableEntry::CreateNetworkRouteTo (network,
                                                         networkMask,
                                                         source,
-                                                        interface);
+                                                        routing);     
   m_networkRoutes.push_back (make_pair (route,metric));
 }
 // void 
@@ -107,11 +107,11 @@ Ipv4StaticRouting::AddNetworkRouteTo (Ipv4Address network,
 void 
 Ipv4StaticRouting::AddHostRouteTo (Ipv4Address dest, 
                                    Ipv4Address source,
-                                   uint32_t interface,
+                                   std::tuple<std::vector <int>,std::vector <double>> routing,
                                    uint32_t metric)
 {
   // NS_LOG_FUNCTION (this << dest << " " << nextHop << " " << interface << " " << metric);
-  AddNetworkRouteTo (dest, Ipv4Mask::GetOnes (), source, interface, metric);
+  AddNetworkRouteTo (dest, Ipv4Mask::GetOnes (), source, routing, metric);
 }
 
 void 
@@ -270,7 +270,7 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address source, Ipv4Address dest, Ptr<NetDe
           NS_LOG_LOGIC ("Found global network route " << j << ", mask length " << masklen << ", metric " << metric);
           if (oif != 0)
             {
-              if (oif != m_ipv4->GetNetDevice (j->GetInterface ()))
+              if (oif != m_ipv4->GetNetDevice (j->GetInterfaces ()[0]))
                 {
                   NS_LOG_LOGIC ("Not on requested interface, skipping");
                   continue;
@@ -293,7 +293,33 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address source, Ipv4Address dest, Ptr<NetDe
             }
           shortest_metric = metric;
           Ipv4RoutingTableEntry* route = (j);
-          uint32_t interfaceIdx = route->GetInterface ();
+          std::vector <int> interfaces = route->GetInterfaces ();
+          std::vector <double> interprobs = route->GetInterProbs ();
+          double random = (double)rand()/RAND_MAX;
+          double start = 0;
+          double end = 0;
+          uint32_t interfaceIdx = 0;
+          for (int j = 0; j < interfaces.size (); j++)
+                {
+                  if (start == 0)
+                  {
+                    if (0 <= random && random < interprobs[j])
+                    {
+                      interfaceIdx = interfaces[j];
+                      break;
+                    }
+                  } else {
+                    start += interprobs[j-1];
+                    end = start + interprobs[j];
+                    if (start <= random && random < end)
+                    {
+                      interfaceIdx = interfaces[j];
+                      break;
+                    } else {
+                      interfaceIdx = interfaces[0];
+                    }
+                  }
+                }
           rtentry = Create<Ipv4Route> ();
           rtentry->SetDestination (route->GetDest ());
           rtentry->SetSource (m_ipv4->SourceAddressSelection (interfaceIdx, route->GetDest ()));
