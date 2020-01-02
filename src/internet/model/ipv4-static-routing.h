@@ -25,6 +25,8 @@
 #include <list>
 #include <utility>
 #include <stdint.h>
+#include <tuple>
+#include <vector>
 #include "ns3/ipv4-address.h"
 #include "ns3/ipv4-header.h"
 #include "ns3/socket.h"
@@ -32,10 +34,10 @@
 #include "ns3/ipv4.h"
 #include "ns3/ipv4-routing-protocol.h"
 
-// typedef std::tuple<
-//     std::vector <int>,
-//     std::vector <double>
-//   > rvector;
+typedef std::tuple<
+    std::vector <int>,
+    std::vector <double>
+  > rvector;
 
 namespace ns3 {
 
@@ -114,8 +116,7 @@ public:
   void AddNetworkRouteTo (Ipv4Address network, 
                           Ipv4Mask networkMask, 
                           Ipv4Address source, 
-                          // rvector routing,
-                          std::tuple<std::vector <int>,std::vector <double>> routing,
+                          rvector routing,
                           uint32_t metric = 0);
 
 /**
@@ -145,10 +146,10 @@ public:
  *
  * \see Ipv4Address
  */
-  // void AddHostRouteTo (Ipv4Address dest, 
-  //                      Ipv4Address nextHop, 
-  //                      uint32_t interface,
-  //                      uint32_t metric = 0);
+  void AddHostRouteTo (Ipv4Address dest, 
+                       Ipv4Address nextHop, 
+                       uint32_t interface,
+                       uint32_t metric = 0);
 /**
  * \brief Add a host route to the static routing table.
  *
@@ -163,10 +164,17 @@ public:
                        uint32_t interface,
                        uint32_t metric = 0);
 
+/**
+ * \brief Add a host route to the static routing table.
+ *
+ * \param dest The Ipv4Address destination for this route.
+ * \param source 
+ * \param tuple 
+ * \see Ipv4Address
+ */
   void AddHostRouteTo (Ipv4Address dest,
                        Ipv4Address source, 
-                      //  rvector routing,
-                       std::tuple<std::vector <int>,std::vector <double>> routing,
+                       rvector routing,
                        uint32_t metric = 0);
 /**
  * \brief Add a default route to the static routing table.

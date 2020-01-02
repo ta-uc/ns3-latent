@@ -23,12 +23,14 @@
 #include <list>
 #include <vector>
 #include <ostream>
+#include <tuple>
+#include <vector>
 
 #include "ns3/ipv4-address.h"
-// typedef std::tuple<
-//     std::vector <int>,
-//     std::vector <double>
-//   > rvector;
+typedef std::tuple<
+    std::vector <int>,
+    std::vector <double>
+  > rvector;
 namespace ns3 {
 
 /**
@@ -135,8 +137,8 @@ public:
   static Ipv4RoutingTableEntry CreateNetworkRouteTo (Ipv4Address network, 
                                                      Ipv4Mask networkMask,
                                                      Ipv4Address source,
-                                                    //  rvector routing,
-                                                     std::tuple<std::vector <int>,std::vector <double>> routing);
+                                                     rvector routing
+                                                    );
   /**
    * \return An Ipv4RoutingTableEntry object corresponding to the input parameters.
    * \param network Ipv4Address of the destination network
@@ -173,8 +175,8 @@ private:
   Ipv4RoutingTableEntry (Ipv4Address network,
                          Ipv4Mask mask,
                          Ipv4Address source,
-                        //  rvector routing,
-                         std::tuple<std::vector <int>,std::vector <double>> routing);
+                         rvector routing
+                         );
   /**
    * \brief Constructor.
    * \param dest destination address
@@ -200,7 +202,7 @@ private:
    */
   Ipv4RoutingTableEntry (Ipv4Address dest,
                          uint32_t interface);
-  std::tuple<std::vector <int>,std::vector <double>> m_routing;
+  rvector m_routing;
   Ipv4Address m_source;
   Ipv4Address m_dest;         //!< destination address
   Ipv4Mask m_destNetworkMask; //!< destination network mask

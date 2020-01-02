@@ -63,7 +63,7 @@ void
 Ipv4StaticRouting::AddNetworkRouteTo (Ipv4Address network, 
                                       Ipv4Mask networkMask, 
                                       Ipv4Address source, 
-                                      std::tuple<std::vector <int>,std::vector <double>> routing,
+                                      rvector routing,
                                       uint32_t metric)
 {
   // NS_LOG_FUNCTION (this << network << " " << networkMask << " " << nextHop << " " << interface << " " << metric);
@@ -74,21 +74,21 @@ Ipv4StaticRouting::AddNetworkRouteTo (Ipv4Address network,
                                                         routing);     
   m_networkRoutes.push_back (make_pair (route,metric));
 }
-// void 
-// Ipv4StaticRouting::AddNetworkRouteTo (Ipv4Address network, 
-//                                       Ipv4Mask networkMask, 
-//                                       Ipv4Address nextHop, 
-//                                       uint32_t interface,
-//                                       uint32_t metric)
-// {
-//   NS_LOG_FUNCTION (this << network << " " << networkMask << " " << nextHop << " " << interface << " " << metric);
-//   Ipv4RoutingTableEntry *route = new Ipv4RoutingTableEntry ();
-//   *route = Ipv4RoutingTableEntry::CreateNetworkRouteTo (network,
-//                                                         networkMask,
-//                                                         nextHop,
-//                                                         interface);
-//   m_networkRoutes.push_back (make_pair (route,metric));
-// }
+void 
+Ipv4StaticRouting::AddNetworkRouteTo (Ipv4Address network, 
+                                      Ipv4Mask networkMask, 
+                                      Ipv4Address nextHop, 
+                                      uint32_t interface,
+                                      uint32_t metric)
+{
+  NS_LOG_FUNCTION (this << network << " " << networkMask << " " << nextHop << " " << interface << " " << metric);
+  Ipv4RoutingTableEntry *route = new Ipv4RoutingTableEntry ();
+  *route = Ipv4RoutingTableEntry::CreateNetworkRouteTo (network,
+                                                        networkMask,
+                                                        nextHop,
+                                                        interface);
+  m_networkRoutes.push_back (make_pair (route,metric));
+}
 
 void 
 Ipv4StaticRouting::AddNetworkRouteTo (Ipv4Address network, 
@@ -107,13 +107,21 @@ Ipv4StaticRouting::AddNetworkRouteTo (Ipv4Address network,
 void 
 Ipv4StaticRouting::AddHostRouteTo (Ipv4Address dest, 
                                    Ipv4Address source,
-                                   std::tuple<std::vector <int>,std::vector <double>> routing,
+                                   rvector routing,
                                    uint32_t metric)
 {
   // NS_LOG_FUNCTION (this << dest << " " << nextHop << " " << interface << " " << metric);
   AddNetworkRouteTo (dest, Ipv4Mask::GetOnes (), source, routing, metric);
 }
-
+ void 
+ Ipv4StaticRouting::AddHostRouteTo (Ipv4Address dest, 
+                                    Ipv4Address nextHop,
+                                    uint32_t interface,
+                                    uint32_t metric)
+ {
+   NS_LOG_FUNCTION (this << dest << " " << nextHop << " " << interface << " " << metric);
+   AddNetworkRouteTo (dest, Ipv4Mask::GetOnes (), nextHop, interface, metric);
+ }
 void 
 Ipv4StaticRouting::AddHostRouteTo (Ipv4Address dest, 
                                    uint32_t interface,
@@ -267,6 +275,7 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address source, Ipv4Address dest, Ptr<NetDe
       NS_LOG_LOGIC ("Searching for route to " << dest << ", checking against route to " << entry << "/" << masklen);
       if (mask.IsMatch (dest, entry) && source.IsEqual (source_table))
         {
+          std::cout << "asd" << std::endl;
           NS_LOG_LOGIC ("Found global network route " << j << ", mask length " << masklen << ", metric " << metric);
           if (oif != 0)
             {
@@ -296,14 +305,15 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address source, Ipv4Address dest, Ptr<NetDe
           std::vector <int> interfaces = route->GetInterfaces ();
           std::vector <double> interprobs = route->GetInterProbs ();
           double random = (double)rand()/RAND_MAX;
+          std::cout << random << std::endl;
           double start = 0;
           double end = 0;
           uint32_t interfaceIdx = 0;
           for (int j = 0; j < interfaces.size (); j++)
                 {
-                  if (start == 0)
+                  if (j == 0)
                   {
-                    if (0 <= random && random < interprobs[j])
+                    if (random < interprobs[j])
                     {
                       interfaceIdx = interfaces[j];
                       break;
@@ -316,6 +326,7 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address source, Ipv4Address dest, Ptr<NetDe
                       interfaceIdx = interfaces[j];
                       break;
                     } else {
+                      std::cout << "NO" << std::endl;
                       interfaceIdx = interfaces[0];
                     }
                   }
