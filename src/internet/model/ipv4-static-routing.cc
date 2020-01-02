@@ -275,7 +275,6 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address source, Ipv4Address dest, Ptr<NetDe
       NS_LOG_LOGIC ("Searching for route to " << dest << ", checking against route to " << entry << "/" << masklen);
       if (mask.IsMatch (dest, entry) && source.IsEqual (source_table))
         {
-          std::cout << "asd" << std::endl;
           NS_LOG_LOGIC ("Found global network route " << j << ", mask length " << masklen << ", metric " << metric);
           if (oif != 0)
             {
@@ -305,7 +304,6 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address source, Ipv4Address dest, Ptr<NetDe
           std::vector <int> interfaces = route->GetInterfaces ();
           std::vector <double> interprobs = route->GetInterProbs ();
           double random = (double)rand()/RAND_MAX;
-          std::cout << random << std::endl;
           double start = 0;
           double end = 0;
           uint32_t interfaceIdx = 0;
