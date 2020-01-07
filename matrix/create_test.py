@@ -2,7 +2,7 @@ nodes = [
   "A","B",
   "C","D",
   "E","F",
-  "G"
+  "G","H"
   ]
 
 links = [
@@ -15,7 +15,9 @@ links = [
   "CF",
   "DE",
   "DF",
-  "GA"
+  "GA",
+  "EH",
+  "FH"
 ]
 
 # routes = [
@@ -28,7 +30,9 @@ routes = [
   "ADE",
   "EDA",
   "FDAG",
-  "ADFCEB"
+  "ADFCEB",
+  "ABFH",
+  "HEDAG"
 ]
 
 print("""  NodeContainer c;
@@ -97,6 +101,10 @@ for node in nodes:
 print("")
 print("""  Ipv4Address fromLocal = Ipv4Address ("102.102.102.102");""")
 
+# routes = [
+#     ["A",{"B":0.5,"D":0.5},{"E":0.6,"F":0.4},"H"]
+#   ]
+
 for route in routes:
   route_list = list(route)
   if(route[-2:] in links):
@@ -127,19 +135,23 @@ for route in routes:
     except:
       oif = link_part_list.index(route_list[i+1]+route_list[i])
     if i == 0:
-      print("""  staticRouting{0}->AddHostRouteTo ({1}, fromLocal, {2});"""
+      print("""  staticRouting{0}->AddHostRouteTo ({1}, fromLocal, {2});//{0}->{3}"""
       .format(
         route_list[i],
         dest,
-        oif+1
+        oif+1,
+        route_list[i+1]
       ))
     else:
-      print("""  staticRouting{0}->AddHostRouteTo ({1}, {2}, {3});"""
+      print("""  staticRouting{0}->AddHostRouteTo ({1}, {2}, {3});//{0}->{4}"""
       .format(
         route_list[i],
         dest,
         source,
-        oif+1
+        oif+1,
+        route_list[i+1]
       ))
   print("")
+
+ 
   

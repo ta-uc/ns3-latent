@@ -1,8 +1,37 @@
+import itertools
+
+# nodes = [
+#   "A","B",
+#   "C","D",
+#   "E","F",
+#   "G","H",
+#   "I","J",
+#   "K"
+#   ]
+
+# links = [
+#   "AB","BA",
+#   "AC","CA",
+#   "BC","CB",
+#   "BD","DB",
+#   "CE","EC",
+#   "CD","DC",
+#   "EF","FE",
+#   "EH","HE",
+#   "DF","FD",
+#   "FI","IF",
+#   "GH","HG",
+#   "HI","IH",
+#   "GK","KG",
+#   "IJ","JI",
+#   "JK","KJ"
+# ]
+
 nodes = [
   "A","B",
   "C","D",
   "E","F",
-  "G"
+  "G","H"
   ]
 
 links = [
@@ -15,21 +44,24 @@ links = [
   "CF",
   "DE",
   "DF",
-  "GA"
+  "GA",
+  "EH",
+  "FH"
+]
+
+routes = [
+  "GADF",
+  "ACFH"
 ]
 
 # routes = [
-#   "GADF"
+#   "ACEFIJK",
+#   "ABDF",
+#   "GHEF",
+#   "KJI",
+#   "GKJ",
+#   "IJK"
 # ]
-routes = [
-  "GADF",
-  "ACF",
-  "ABE",
-  "ADE",
-  "EDA",
-  "FDAG",
-  "ADFCEB"
-]
 
 print("""  NodeContainer c;
   c.Create ({0});
@@ -97,9 +129,9 @@ for node in nodes:
 print("")
 print("""  Ipv4Address fromLocal = Ipv4Address ("102.102.102.102");""")
 
-routes = [
-    ["A",{"B":0.5,"D":0.5},{"E":0.6,"F":0.4},"H"]
-  ]
+# routes = [
+#     "ABEFH"
+#   ]
 
 for route in routes:
   route_list = list(route)
@@ -131,21 +163,20 @@ for route in routes:
     except:
       oif = link_part_list.index(route_list[i+1]+route_list[i])
     if i == 0:
-      print("""  staticRouting{0}->AddHostRouteTo ({1}, fromLocal, {2});"""
+      print("""  staticRouting{0}->AddHostRouteTo ({1}, fromLocal, rvector ({{{2}}},{{1}}));//{0}->{3}"""
       .format(
         route_list[i],
         dest,
-        oif+1
+        oif+1,
+        route_list[i+1]
       ))
     else:
-      print("""  staticRouting{0}->AddHostRouteTo ({1}, {2}, {3});"""
+      print("""  staticRouting{0}->AddHostRouteTo ({1}, {2}, rvector ({{{3}}},{{1}}));//{0}->{4}"""
       .format(
         route_list[i],
         dest,
         source,
-        oif+1
+        oif+1,
+        route_list[i+1]
       ))
   print("")
-
- 
-  
