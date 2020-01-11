@@ -243,7 +243,7 @@ Ipv4StaticRouting::RemoveMulticastRoute (uint32_t index)
 }
 
 Ptr<Ipv4Route>
-Ipv4StaticRouting::LookupStatic (Ipv4Address source, Ipv4Address dest, Ptr<NetDevice> oif)
+Ipv4StaticRouting::LookupStatic (Ipv4Address dest, Ipv4Address source,  Ptr<NetDevice> oif)
 {
   NS_LOG_FUNCTION (this << dest << " " << oif);
   Ptr<Ipv4Route> rtentry = 0;
@@ -273,6 +273,7 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address source, Ipv4Address dest, Ptr<NetDe
       Ipv4Address entry = (j)->GetDestNetwork ();
       Ipv4Address source_table = (j)->GetSource ();
       NS_LOG_LOGIC ("Searching for route to " << dest << ", checking against route to " << entry << "/" << masklen);
+      NS_LOG_LOGIC ("from: "<<source <<"againt: "<<source_table);
       if (mask.IsMatch (dest, entry) && source.IsEqual (source_table))
         {
           NS_LOG_LOGIC ("Found global network route " << j << ", mask length " << masklen << ", metric " << metric);
@@ -526,7 +527,7 @@ Ipv4StaticRouting::RouteOutput (Ptr<Packet> p, const Ipv4Header &header, Ptr<Net
       // So, we just log it and fall through to LookupStatic ()
       NS_LOG_LOGIC ("RouteOutput()::Multicast destination");
     }
-  rtentry = LookupStatic (source, destination, oif);
+  rtentry = LookupStatic (destination, source, oif);
   if (rtentry)
     { 
       sockerr = Socket::ERROR_NOTERROR;
@@ -555,8 +556,7 @@ Ipv4StaticRouting::RouteInput  (Ptr<const Packet> p, const Ipv4Header &ipHeader,
   if (ipHeader.GetDestination ().IsMulticast ())
     {
       NS_LOG_LOGIC ("Multicast destination");
-      Ptr<Ipv4MulticastRoute> mrtentry =  LookupStatic (ipHeader.GetSource (),
-                                                        ipHeader.GetDestination (), m_ipv4->GetInterfaceForDevice (idev));
+      Ptr<Ipv4MulticastRoute> mrtentry =  LookupStatic (ipHeader.GetDestination (), ipHeader.GetSource (), m_ipv4->GetInterfaceForDevice (idev));
 
       if (mrtentry)
         {
@@ -598,7 +598,7 @@ Ipv4StaticRouting::RouteInput  (Ptr<const Packet> p, const Ipv4Header &ipHeader,
       return true;
     }
   // Next, try to find a route
-  Ptr<Ipv4Route> rtentry = LookupStatic (ipHeader.GetSource (), ipHeader.GetDestination ());
+  Ptr<Ipv4Route> rtentry = LookupStatic (ipHeader.GetDestination (), ipHeader.GetSource ());
   if (rtentry != 0)
     {
       NS_LOG_LOGIC ("Found unicast destination- calling unicast callback");
