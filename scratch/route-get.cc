@@ -2,39 +2,43 @@
 #include <fstream>
 #include <string>
 #include <cassert>
-#include <stdlib.h>
-#include <time.h>
-#include <tuple>
-#include <vector>
+#include <math.h>
 #include <array>
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
-#include "ns3/csma-module.h"
 #include "ns3/applications-module.h"
-#include "ns3/ipv4-static-routing-helper.h"
+#include "ns3/flow-monitor-helper.h"
+#include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/netanim-module.h"
 #include "ns3/traffic-control-helper.h"
+#include "ns3/csma-module.h"
+
+
 
 
 #define PACKET_SIZE 1300 //bytes 分割・統合されないサイズにする
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
-#define ONE_DATUM 100 //パケットで1データ
+#define ONE_DATUM 1 //パケットで1データ
 #define DEFAULT_SEND_RATE "5Mbps"
-#define NUM_PACKETS 30000
-#define END_TIME 41 //Seconds
-#define INTERVAL 20 //Seconds
+#define BOTTLE_NECK_LINK_RATE "5Mbps"
+#define OTHER_LINK_RATE "10Mbps"
+#define NUM_PACKETS 1
+#define END_TIME 30 //Seconds
+#define TXQUEUE "5p" //先にうまる
+#define TCQUEUE "5p" //TXが埋まると使われる
 #define TCP_TYPE "ns3::TcpNewReno"
+
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("Multipath staticrouging");
 
-Ptr<OutputStreamWrapper> streamLinkTrafSize;
-Ptr<OutputStreamWrapper> streamLinkPktCount;
-Ptr<OutputStreamWrapper> streamLinkLossCount;
+NS_LOG_COMPONENT_DEFINE ("Internet2");
+
+
+uint16_t row = 0;
 
 class MyApp : public Application 
 {
@@ -66,11 +70,8 @@ class MyApp : public Application
     std::string m_name;
     uint32_t    m_tcpsent;
     uint32_t    m_packetLoss;
+    double      m_previousLossRate;
     uint64_t    m_targetRate;
-    Ptr<OutputStreamWrapper> m_cwndStream;
-    Ptr<OutputStreamWrapper> m_datarateStream;
-    Ptr<OutputStreamWrapper> m_lossStream;
-
 };
 
 MyApp::MyApp ()
@@ -87,10 +88,8 @@ MyApp::MyApp ()
     m_name (""),
     m_tcpsent (0),
     m_packetLoss (0),
-    m_targetRate (0),
-    m_cwndStream (),
-    m_datarateStream (),
-    m_lossStream()
+    m_previousLossRate (0),
+    m_targetRate (0)
 {
 }
 
@@ -111,11 +110,8 @@ MyApp::Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, u
   m_dataRate = dataRate;
   m_name = name;
   m_targetRate = dataRate.GetBitRate ();
+  m_previousLossRate = 0;
 
-  AsciiTraceHelper ascii;
-  // m_cwndStream = ascii.CreateFileStream ("./Data/"+m_name+".cwnd");
-  m_datarateStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".drate");
-  m_lossStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".loss");
 }
 
 void
@@ -125,6 +121,7 @@ MyApp::StartApplication (void)
   m_packetsSent = 0;
   m_socket->Bind ();
   m_socket->Connect (m_peer);
+  m_socket->ShutdownRecv ();
   m_socket->TraceConnectWithoutContext("Tx", MakeCallback (&MyApp::CountTCPTx, this));
   m_socket->TraceConnectWithoutContext("CongestionWindow", MakeCallback (&MyApp::DetectPacketLoss, this));
   SendPacket ();
@@ -151,12 +148,14 @@ MyApp::StopApplication (void)
 void
 MyApp::ReConnect (void)
 {
+  m_previousLossRate = m_packetLoss / (double) m_tcpsent;
   m_packetLoss = 0;
   m_tcpsent = 0;
   m_running = true;
   m_socket = Socket::CreateSocket (m_node, m_tid);;
   m_socket->Bind ();
   m_socket->Connect (m_peer);
+  m_socket->ShutdownRecv ();
   m_socket->TraceConnectWithoutContext("Tx", MakeCallback (&MyApp::CountTCPTx, this));
   m_socket->TraceConnectWithoutContext("CongestionWindow", MakeCallback (&MyApp::DetectPacketLoss, this));
   SendPacket ();
@@ -167,17 +166,15 @@ MyApp::SendPacket (void)
 {
   Ptr<Packet> packet = Create<Packet> (m_packetSize);
   m_socket->Send (packet);
-
-  if(++m_packetsSent % ONE_DATUM == 0)   // １データ送信でコネクション終了
+  // １データ送信でコネクション終了
+  if(++m_packetsSent % ONE_DATUM == 0)
   {
+    if (row <= 109)
+    {
+      row++;
+    }
     StopApplication ();
-    double lossRate = m_packetLoss / (double) m_tcpsent;
-    ChangeDataRate (lossRate);
-
-    // Trace datarate, lossrate
-    *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
-    *m_lossStream->GetStream () << Simulator::Now ().GetSeconds () << " " << lossRate << std::endl;
-    
+    ChangeDataRate (m_packetLoss / (double) m_tcpsent);
     if (m_packetsSent < m_nPackets)
     {
         Simulator::ScheduleNow (&MyApp::ReConnect,this);
@@ -203,13 +200,18 @@ MyApp::ScheduleTx (void)
 void
 MyApp::ChangeDataRate (double lossRate)
 {
-  m_dataRate =  DataRate(static_cast<uint64_t>(m_targetRate * exp (-13.1 * lossRate)));
+  uint64_t dataRateNow = m_dataRate.GetBitRate ();
+  if (m_previousLossRate < 0.001 && dataRateNow < m_targetRate)
+  {
+    m_dataRate = DataRate(m_targetRate * (1 / exp(-11 * lossRate)));
+  }else{
+    m_dataRate =  DataRate(static_cast<uint64_t>(dataRateNow * exp (-11 * lossRate)));
+  }
 }
 
 void
 MyApp::DetectPacketLoss (const uint32_t org, const uint32_t cgd)
 {
-  // *m_cwndStream->GetStream () << Simulator::Now ().GetSeconds () << " " << cgd << std::endl;
   if(org > cgd) //cwnd 減少
   {
     ++m_packetLoss;
@@ -226,61 +228,32 @@ MyApp::CountTCPTx (const Ptr<const Packet> packet, const TcpHeader &header, cons
 }
 
 std::array<uint64_t, 28> pktCountAry = {0};
-std::array<uint64_t, 28> pktSizeCountAry = {0};
+
+int rt[112][28] = {{0}};
+
 static void
 linkPktCount (uint16_t linkn, Ptr< const Packet > packet)
 {
-  pktCountAry[linkn] += 1;
-  pktSizeCountAry[linkn] += packet->GetSize ();
-}
-
-std::array<uint64_t, 28> pktLossCountAry = {0};
-static void
-linkPktLossCount (uint16_t const linkn, Ptr<ns3::QueueDiscItem const> item)
-{
-  pktLossCountAry[linkn] += 1;
-}
-
-static void
-monitorLink (double time)
-{
-  for (uint8_t i = 0; i < 28; i++)
+  if (packet->GetSize () > 1000)
   {
-    *streamLinkTrafSize->GetStream () << pktSizeCountAry[i] << std::endl;
-    *streamLinkPktCount->GetStream () << pktCountAry[i] << std::endl;
-    *streamLinkLossCount->GetStream () << pktLossCountAry[i] << std::endl;
+    rt[row][linkn] = {1};
   }
-  *streamLinkTrafSize->GetStream ()<< std::endl;
-  *streamLinkPktCount->GetStream ()<< std::endl;
-  *streamLinkLossCount->GetStream ()<< std::endl;
-  
-  pktSizeCountAry = {0};
-  pktCountAry = {0};
-  pktLossCountAry = {0};
-
-  Simulator::Schedule (Time ( Seconds (time)), &monitorLink, time);
 }
 
-
-typedef std::tuple<
-  std::vector <int>,
-  std::vector <double>
-> rvector;
 
 int 
 main (int argc, char *argv[])
 {
   CommandLine cmd;
+  bool enableFlowMonitor = false;
+  bool enableAnimation = false;
+  cmd.AddValue ("EnableMonitor", "Enable Flow Monitor", enableFlowMonitor);
+  cmd.AddValue ("EnableAnimation", "Enable Animation", enableAnimation);
   cmd.Parse (argc, argv);
 
-  // Set default tcp type
-  Config::SetDefault ("ns3::TcpL4Protocol::SocketType", StringValue (TCP_TYPE));
-  // Set default tcp segment size
   Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (SEGMENT_SIZE)); 
 
-  srand((unsigned)time(NULL));
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
   NodeContainer c;
   c.Create (11);
 
@@ -395,34 +368,6 @@ main (int argc, char *argv[])
   dGK.Get (1)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&linkPktCount, 26));
   dJK.Get (1)->TraceConnectWithoutContext("PhyTxEnd", MakeBoundCallback(&linkPktCount, 27));
 
-  Config::ConnectWithoutContext ("/NodeList/0/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 0));
-  Config::ConnectWithoutContext ("/NodeList/0/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 1));
-  Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 2));
-  Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 3));
-  Config::ConnectWithoutContext ("/NodeList/1/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 4));
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 5));
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 6));
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 7));
-  Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 8));
-  Config::ConnectWithoutContext ("/NodeList/3/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 9));
-  Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 10));
-  Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 11));
-  Config::ConnectWithoutContext ("/NodeList/4/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 12));
-  Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 13));
-  Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 14));
-  Config::ConnectWithoutContext ("/NodeList/5/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 15));
-  Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 16));
-  Config::ConnectWithoutContext ("/NodeList/6/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 17));
-  Config::ConnectWithoutContext ("/NodeList/7/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 18));
-  Config::ConnectWithoutContext ("/NodeList/7/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 19));
-  Config::ConnectWithoutContext ("/NodeList/7/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 20));
-  Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 21));
-  Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 22));
-  Config::ConnectWithoutContext ("/NodeList/8/$ns3::TrafficControlLayer/RootQueueDiscList/3/Drop", MakeBoundCallback (&linkPktLossCount, 23));
-  Config::ConnectWithoutContext ("/NodeList/9/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 24));
-  Config::ConnectWithoutContext ("/NodeList/9/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 25));
-  Config::ConnectWithoutContext ("/NodeList/10/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 26));
-  Config::ConnectWithoutContext ("/NodeList/10/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 27));
 
   Ptr<CsmaNetDevice> deviceA = CreateObject<CsmaNetDevice> ();
   deviceA->SetAddress (Mac48Address::Allocate ());
@@ -1613,69 +1558,77 @@ main (int argc, char *argv[])
   staticRoutingK->AddHostRouteTo (Ipv4Address ("172.16.1.10"), ifInAddrK.GetLocal (), rvector ({2},{1}));//K->J(TCP2)
   staticRoutingK->AddHostRouteTo (iJK.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({2},{1}));//K->J(TCP3)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+  Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
 
-  // Setup sink App
-    int sinkPort = 9;
+  // Setup sink applications
+    uint16_t sinkPort = 9;
 
     PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
-    std::array<ApplicationContainer, 11> sinkApps;
+
+    std::array<ApplicationContainer,11> sinkApps;
+
     for(int i = 0; i <= 10; i++){
       sinkApps[i] = packetSinkHelper.Install (c.Get (i));
       sinkApps[i].Start (Seconds (0.));
       sinkApps[i].Stop (Seconds (END_TIME));
     }
-  // Setup sink App end
+  // Setup sink applications end
+ 
 
   // Setup source application
-    TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
-    for (int i = 0; i <= 10; i++)
-    {
-      for (int j = 0; j <= 10; j++)
+      TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
+      for (int i = 0; i <= 10; i++)
       {
-        if (j != i)
+        for (int j = 0; j <= 10; j++)
         {
-          Ptr<MyApp> app = CreateObject<MyApp> ();
-          Ptr<Node> node = c.Get (i);
-          Address sinkAddress = InetSocketAddress (sinkAddresses[j], sinkPort);
-          app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE), "n" + std::to_string(i) + "-n" + std::to_string(j));
-          node->AddApplication (app);
-          app->SetStartTime (Seconds (0));
-          app->SetStopTime (Seconds (END_TIME - 1));
+          if (j != i)
+          {
+            Ptr<MyApp> app = CreateObject<MyApp> ();
+            Ptr<Node> node = c.Get (i);
+            Address sinkAddress =  InetSocketAddress (sinkAddresses[j], sinkPort);
+            app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE),"Sender "+std::to_string(i)+" (" + std::to_string(i) + "-" + std::to_string(j) + ")");
+            node->AddApplication (app);
+            app->SetStartTime (Seconds (i*2+j*0.1));
+            app->SetStopTime (Seconds (END_TIME -1));
+          }
         }
       }
-    }
-  // Setup source application end
-
-  // Trace settings
-    AsciiTraceHelper ascii;
-    streamLinkTrafSize = ascii.CreateFileStream ("./matrix/link.traf");
-    streamLinkPktCount = ascii.CreateFileStream ("./matrix/link.pktc");
-    streamLinkLossCount = ascii.CreateFileStream ("./matrix/link.loss");
-
-    Simulator::Schedule(Time (Seconds (INTERVAL)), &monitorLink, INTERVAL);
-    *streamLinkTrafSize->GetStream ()<< INTERVAL <<"\n\n";
-    *streamLinkTrafSize->GetStream ()<< END_TIME / INTERVAL <<"\n\n";
-  // Trace settings
+  // Setup source applications end
 
   // Animation settings
     AnimationInterface::SetConstantPosition (c.Get (0),2.0,2.0);
     AnimationInterface::SetConstantPosition (c.Get (1),2.0,4.0);
-    AnimationInterface::SetConstantPosition (c.Get (2),4.0,4.0);
-    AnimationInterface::SetConstantPosition (c.Get (3),3.0,6.0);
+    AnimationInterface::SetConstantPosition (c.Get (2),3.0,6.0);
+    AnimationInterface::SetConstantPosition (c.Get (3),4.0,4.0);
     AnimationInterface::SetConstantPosition (c.Get (4),6.0,4.0);
     AnimationInterface::SetConstantPosition (c.Get (5),6.0,6.0);
-    AnimationInterface::SetConstantPosition (c.Get (6),8.0,3.0);
-    AnimationInterface::SetConstantPosition (c.Get (7),8.0,4.0);
+    AnimationInterface::SetConstantPosition (c.Get (6),8.0,4.0);
+    AnimationInterface::SetConstantPosition (c.Get (7),8.0,3.0);
     AnimationInterface::SetConstantPosition (c.Get (8),8.0,6.0);
     AnimationInterface::SetConstantPosition (c.Get (9),9.0,5.0);
     AnimationInterface::SetConstantPosition (c.Get (10),10.0,4.0);
-    AnimationInterface anim ("./Data/static-route-default.xml");
+    AnimationInterface anim ("./Data/routeget.xml");
   //Animation settings end
 
   Simulator::Stop (Seconds (END_TIME));
   Simulator::Run ();
+  std::cout << "[";
+  for (int i = 1; i < 111; i++)
+  {
+    std::cout << "[";
+    for (int j = 0; j < 28; j++)
+    {
+      std::cout << rt[i][j];
+      if (j != 27)
+      {
+        std::cout << ",";
+      }
+      
+    }
+    std::cout << "],"<<std::endl;
+  }
+  std::cout << "]";
   Simulator::Destroy ();
   return 0;
 }
