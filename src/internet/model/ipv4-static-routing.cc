@@ -308,7 +308,7 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address dest, Ipv4Address source,  Ptr<NetD
           double start = 0;
           double end = 0;
           uint32_t interfaceIdx = 0;
-          for (int j = 0; j < interfaces.size (); j++)
+          for (uint j = 0; j < interfaces.size (); j++)
                 {
                   if (j == 0)
                   {
