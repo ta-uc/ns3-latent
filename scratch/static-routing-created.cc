@@ -45,6 +45,7 @@ class MyApp : public Application
     void ChangeDataRate(double);
     void DetectPacketLoss (const uint32_t, const uint32_t);
     void CountTCPTx (const Ptr<const Packet> packet, const TcpHeader &header, const Ptr<const TcpSocketBase> socket);
+    void woTCPTx (double time);
 
   private:
     virtual void StartApplication (void);
@@ -65,11 +66,13 @@ class MyApp : public Application
     uint32_t    m_packetsSent;
     std::string m_name;
     uint32_t    m_tcpsent;
+    uint32_t    m_tcpsentSize;
     uint32_t    m_packetLoss;
     uint64_t    m_targetRate;
     Ptr<OutputStreamWrapper> m_cwndStream;
     Ptr<OutputStreamWrapper> m_datarateStream;
     Ptr<OutputStreamWrapper> m_lossStream;
+    Ptr<OutputStreamWrapper> m_tcpTxStream;
 
 };
 
@@ -86,11 +89,13 @@ MyApp::MyApp ()
     m_packetsSent (0),
     m_name (""),
     m_tcpsent (0),
+    m_tcpsentSize (0),
     m_packetLoss (0),
     m_targetRate (0),
     m_cwndStream (),
     m_datarateStream (),
-    m_lossStream()
+    m_lossStream (),
+    m_tcpTxStream ()
 {
 }
 
@@ -113,9 +118,10 @@ MyApp::Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, u
   m_targetRate = dataRate.GetBitRate ();
 
   AsciiTraceHelper ascii;
-  // m_cwndStream = ascii.CreateFileStream ("./Data/"+m_name+".cwnd");
+  m_cwndStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".cwnd");
   m_datarateStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".drate");
   m_lossStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".loss");
+  m_tcpTxStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".thr");
 }
 
 void
@@ -128,6 +134,7 @@ MyApp::StartApplication (void)
   m_socket->TraceConnectWithoutContext("Tx", MakeCallback (&MyApp::CountTCPTx, this));
   m_socket->TraceConnectWithoutContext("CongestionWindow", MakeCallback (&MyApp::DetectPacketLoss, this));
   SendPacket ();
+  woTCPTx (1);
 }
 
 void 
@@ -153,6 +160,7 @@ MyApp::ReConnect (void)
 {
   m_packetLoss = 0;
   m_tcpsent = 0;
+  // m_tcpsentSize = 0;
   m_running = true;
   m_socket = Socket::CreateSocket (m_node, m_tid);;
   m_socket->Bind ();
@@ -209,7 +217,7 @@ MyApp::ChangeDataRate (double lossRate)
 void
 MyApp::DetectPacketLoss (const uint32_t org, const uint32_t cgd)
 {
-  // *m_cwndStream->GetStream () << Simulator::Now ().GetSeconds () << " " << cgd << std::endl;
+  *m_cwndStream->GetStream () << Simulator::Now ().GetSeconds () << " " << cgd << std::endl;
   if(org > cgd) //cwnd 減少
   {
     ++m_packetLoss;
@@ -222,7 +230,16 @@ MyApp::CountTCPTx (const Ptr<const Packet> packet, const TcpHeader &header, cons
   if(packet->GetSize () > 0) 
   {
     ++m_tcpsent;
+    m_tcpsentSize += packet->GetSize () * 8;
   }
+}
+
+void
+MyApp::woTCPTx (double time)
+{
+  *m_tcpTxStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_tcpsentSize / time << std::endl;
+  m_tcpsentSize = 0;
+  Simulator::Schedule (Time ( Seconds (time)), &MyApp::woTCPTx, this, time);
 }
 
 std::array<uint64_t, 28> pktCountAry = {0};
@@ -2046,7 +2063,12 @@ main (int argc, char *argv[])
           Ptr<MyApp> app = CreateObject<MyApp> ();
           Ptr<Node> node = c.Get (i);
           Address sinkAddress = InetSocketAddress (sinkAddresses[j], sinkPort);
-          app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE), "n" + std::to_string(i) + "-n" + std::to_string(j));
+          if (i == 9 && j == 2)
+          {
+            app->Setup (tid, node ,sinkAddress, PACKET_SIZE, 300000, DataRate ("35Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j));
+          } else {
+            app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE), "n" + std::to_string(i) + "-n" + std::to_string(j));
+          }
           node->AddApplication (app);
           app->SetStartTime (Seconds (0));
           app->SetStopTime (Seconds (END_TIME - 1));

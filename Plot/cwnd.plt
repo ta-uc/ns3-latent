@@ -1,15 +1,13 @@
-set xrange [2:120]
-set yrange [0:70000]
+set xrange [0:40]
+#set yrange [0:70000]
 set key right
 set grid
+set terminal png
+set output './cwnd.png'
 
 set xlabel 'time'
 set ylabel 'cwnd'
 
-plot "./Data/Sender 1.cwnd" using 1:2 \
-     with linespoints pt 7 ps 0.9 t "Sender-1",\
-     "./Data/Sender 2.cwnd" using 1:2 \
-     with linespoints pt 9 ps 0.9 t "Sender-1",\
-     "./Data/Sender 3.cwnd" using 1:2 \
-     with linespoints pt 13 ps 0.9 t "Sender-1"
+plot "./Data/n0-n1.cwnd" using 1:2 \
+     with linespoints pt 7 ps 0.9 t "n0-n1"
 pause -1
