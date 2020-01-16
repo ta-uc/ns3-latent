@@ -67,7 +67,9 @@ class MyApp : public Application
     std::string m_name;
     uint32_t    m_tcpsent;
     uint32_t    m_tcpsentSize;
+    uint32_t    m_tcpsentCount;
     uint32_t    m_packetLoss;
+    uint32_t    m_packetLossParTime;
     uint64_t    m_targetRate;
     Ptr<OutputStreamWrapper> m_cwndStream;
     Ptr<OutputStreamWrapper> m_datarateStream;
@@ -90,7 +92,9 @@ MyApp::MyApp ()
     m_name (""),
     m_tcpsent (0),
     m_tcpsentSize (0),
+    m_tcpsentCount (0),
     m_packetLoss (0),
+    m_packetLossParTime (0),
     m_targetRate (0),
     m_cwndStream (),
     m_datarateStream (),
@@ -160,7 +164,6 @@ MyApp::ReConnect (void)
 {
   m_packetLoss = 0;
   m_tcpsent = 0;
-  // m_tcpsentSize = 0;
   m_running = true;
   m_socket = Socket::CreateSocket (m_node, m_tid);;
   m_socket->Bind ();
@@ -183,8 +186,8 @@ MyApp::SendPacket (void)
     ChangeDataRate (lossRate);
 
     // Trace datarate, lossrate
-    *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
-    *m_lossStream->GetStream () << Simulator::Now ().GetSeconds () << " " << lossRate << std::endl;
+    // *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
+    // *m_lossStream->GetStream () << Simulator::Now ().GetSeconds () << " " << lossRate << std::endl;
     
     if (m_packetsSent < m_nPackets)
     {
@@ -217,10 +220,11 @@ MyApp::ChangeDataRate (double lossRate)
 void
 MyApp::DetectPacketLoss (const uint32_t org, const uint32_t cgd)
 {
-  *m_cwndStream->GetStream () << Simulator::Now ().GetSeconds () << " " << cgd << std::endl;
+  // *m_cwndStream->GetStream () << Simulator::Now ().GetSeconds () << " " << cgd << std::endl;
   if(org > cgd) //cwnd 減少
   {
     ++m_packetLoss;
+    ++m_packetLossParTime;
   }
 }
 
@@ -230,6 +234,7 @@ MyApp::CountTCPTx (const Ptr<const Packet> packet, const TcpHeader &header, cons
   if(packet->GetSize () > 0) 
   {
     ++m_tcpsent;
+    ++m_tcpsentCount;
     m_tcpsentSize += packet->GetSize () * 8;
   }
 }
@@ -238,7 +243,10 @@ void
 MyApp::woTCPTx (double time)
 {
   *m_tcpTxStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_tcpsentSize / time << std::endl;
+  *m_lossStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_packetLossParTime / (double) m_tcpsentCount  << std::endl;
   m_tcpsentSize = 0;
+  m_tcpsentCount = 0;
+  m_packetLossParTime = 0;
   Simulator::Schedule (Time ( Seconds (time)), &MyApp::woTCPTx, this, time);
 }
 

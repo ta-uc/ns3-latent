@@ -11,5 +11,6 @@ set ylabel 'throughput'
 
 plot "./Data/n0-n1.thr" using 1:2 with linespoints pt 1 ps 0.9 t "n0-n1",\
      "./Data/n9-n2.thr" using 1:2 with linespoints pt 1 ps 0.9 t "n9-n2",\
-     "./Data/n8-n2.thr" using 1:2 with linespoints pt 1 ps 0.9 t "n8-n2"
+     "./Data/n8-n2.thr" using 1:2 with linespoints pt 1 ps 0.9 t "n8-n2",\
+     "./Data/n5-n2.thr" using 1:2 with linespoints pt 1 ps 0.9 t "n5-n2"
 pause -1
