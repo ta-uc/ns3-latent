@@ -2073,7 +2073,7 @@ main (int argc, char *argv[])
           Address sinkAddress = InetSocketAddress (sinkAddresses[j], sinkPort);
           if (i == 9 && j == 2)
           {
-            app->Setup (tid, node ,sinkAddress, PACKET_SIZE, 300000, DataRate ("35Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j));
+            app->Setup (tid, node ,sinkAddress, PACKET_SIZE, 300000, DataRate ("20Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j));
           } else {
             app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE), "n" + std::to_string(i) + "-n" + std::to_string(j));
           }
