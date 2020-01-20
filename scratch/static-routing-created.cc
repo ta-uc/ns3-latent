@@ -2079,7 +2079,7 @@ main (int argc, char *argv[])
           }
           node->AddApplication (app);
           app->SetStartTime (Seconds (0));
-          app->SetStopTime (Seconds (END_TIME - 1));
+          app->SetStopTime (Seconds (END_TIME));
         }
       }
     }
