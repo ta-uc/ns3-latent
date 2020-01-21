@@ -305,10 +305,6 @@ main (int argc, char *argv[])
 
   srand((unsigned)time(NULL));
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
   NodeContainer c;
   c.Create (11);
 
@@ -347,7 +343,7 @@ main (int argc, char *argv[])
   NetDeviceContainer dGK = p2p.Install (nGK);
   NetDeviceContainer dIJ = p2p.Install (nIJ);
   NetDeviceContainer dJK = p2p.Install (nJK);
-  
+
   Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
   Config::Set("/NodeList/0/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
   Config::Set("/NodeList/1/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("24Mbps")));
@@ -376,7 +372,6 @@ main (int argc, char *argv[])
   Config::Set("/NodeList/9/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("42Mbps")));
   Config::Set("/NodeList/10/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
   Config::Set("/NodeList/10/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("36Mbps")));
-
 
   TrafficControlHelper tch;
   tch.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
@@ -1092,14 +1087,14 @@ main (int argc, char *argv[])
   staticRoutingD->AddHostRouteTo (Ipv4Address ("172.16.1.7"), ifInAddrD.GetLocal (), rvector ({2},{1}));//D->F(TCP)
   staticRoutingD->AddHostRouteTo (iGH.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({2},{1}));//D->F(TCP)
   staticRoutingD->AddHostRouteTo (iGK.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({2},{1}));//D->F(TCP)
-  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.7"), iDF.GetAddress (0,0), rvector ({1},{1}));//F->E
-  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.7"), ifInAddrD.GetLocal (), rvector ({1},{1}));//F->E(TCP)
-  staticRoutingF->AddHostRouteTo (iGH.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({1},{1}));//F->E(TCP)
-  staticRoutingF->AddHostRouteTo (iGK.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({1},{1}));//F->E(TCP)
-  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.7"), iDF.GetAddress (0,0), rvector ({3},{1}));//E->H
-  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.7"), ifInAddrD.GetLocal (), rvector ({3},{1}));//E->H(TCP)
-  staticRoutingE->AddHostRouteTo (iGH.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({3},{1}));//E->H(TCP)
-  staticRoutingE->AddHostRouteTo (iGK.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({3},{1}));//E->H(TCP)
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.7"), iDF.GetAddress (0,0), rvector ({3},{1}));//F->I
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.7"), ifInAddrD.GetLocal (), rvector ({3},{1}));//F->I(TCP)
+  staticRoutingF->AddHostRouteTo (iGH.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({3},{1}));//F->I(TCP)
+  staticRoutingF->AddHostRouteTo (iGK.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({3},{1}));//F->I(TCP)
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.7"), iDF.GetAddress (0,0), rvector ({2},{1}));//I->H
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.7"), ifInAddrD.GetLocal (), rvector ({2},{1}));//I->H(TCP)
+  staticRoutingI->AddHostRouteTo (iGH.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({2},{1}));//I->H(TCP)
+  staticRoutingI->AddHostRouteTo (iGK.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({2},{1}));//I->H(TCP)
   staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.7"), iDF.GetAddress (0,0), rvector ({2},{1}));//H->G
   staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.7"), ifInAddrD.GetLocal (), rvector ({2},{1}));//H->G(TCP)
   staticRoutingH->AddHostRouteTo (iGH.GetAddress (0,0), ifInAddrD.GetLocal (), rvector ({2},{1}));//H->G(TCP)
@@ -1434,24 +1429,6 @@ main (int argc, char *argv[])
   staticRoutingE->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({1},{1}));//E->C(TCP)
   staticRoutingE->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({1},{1}));//E->C(TCP)
 
-  staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.4"), fromLocal, rvector ({1},{1}));//G->H(normal packet)
-  staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iGH.GetAddress (0,0), rvector ({1},{1}));//G->H(TCP)
-  staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.4"), ifInAddrG.GetLocal (), rvector ({1},{1}));//G->H(TCP)
-  staticRoutingG->AddHostRouteTo (iBD.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({1},{1}));//G->H(TCP)
-  staticRoutingG->AddHostRouteTo (iDF.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({1},{1}));//G->H(TCP)
-  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iGH.GetAddress (0,0), rvector ({3},{1}));//H->I
-  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.4"), ifInAddrG.GetLocal (), rvector ({3},{1}));//H->I(TCP)
-  staticRoutingH->AddHostRouteTo (iBD.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({3},{1}));//H->I(TCP)
-  staticRoutingH->AddHostRouteTo (iDF.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({3},{1}));//H->I(TCP)
-  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iGH.GetAddress (0,0), rvector ({1},{1}));//I->F
-  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.4"), ifInAddrG.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingI->AddHostRouteTo (iBD.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingI->AddHostRouteTo (iDF.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iGH.GetAddress (0,0), rvector ({2},{1}));//F->D
-  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.4"), ifInAddrG.GetLocal (), rvector ({2},{1}));//F->D(TCP)
-  staticRoutingF->AddHostRouteTo (iBD.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({2},{1}));//F->D(TCP)
-  staticRoutingF->AddHostRouteTo (iDF.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({2},{1}));//F->D(TCP)
-
   staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.5"), fromLocal, rvector ({1},{1}));//G->H(normal packet)
   staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.5"), iGH.GetAddress (0,0), rvector ({1},{1}));//G->H(TCP)
   staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.5"), ifInAddrG.GetLocal (), rvector ({1},{1}));//G->H(TCP)
@@ -1739,28 +1716,6 @@ main (int argc, char *argv[])
   staticRoutingJ->AddHostRouteTo (iGK.GetAddress (1,0), ifInAddrI.GetLocal (), rvector ({2},{1}));//J->K(TCP)
   staticRoutingJ->AddHostRouteTo (iJK.GetAddress (1,0), ifInAddrI.GetLocal (), rvector ({2},{1}));//J->K(TCP)
 
-  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), fromLocal, rvector ({1},{1}));//J->I(normal packet)
-  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingJ->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingJ->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//I->F
-  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingI->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingI->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//F->E
-  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//F->E(TCP)
-  staticRoutingF->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//F->E(TCP)
-  staticRoutingF->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//F->E(TCP)
-  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//E->C
-  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
-  staticRoutingE->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
-  staticRoutingE->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
-  staticRoutingC->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//C->A
-  staticRoutingC->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//C->A(TCP)
-  staticRoutingC->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//C->A(TCP)
-  staticRoutingC->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//C->A(TCP)
-
   staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.2"), fromLocal, rvector ({1},{1}));//J->I(normal packet)
   staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.2"), iIJ.GetAddress (1,0), rvector ({1},{1}));//J->I(TCP)
   staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.2"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
@@ -1782,28 +1737,6 @@ main (int argc, char *argv[])
   staticRoutingD->AddHostRouteTo (iAB.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//D->B(TCP)
   staticRoutingD->AddHostRouteTo (iBC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//D->B(TCP)
   staticRoutingD->AddHostRouteTo (iBD.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//D->B(TCP)
-
-  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.3"), fromLocal, rvector ({1},{1}));//J->I(normal packet)
-  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.3"), iIJ.GetAddress (1,0), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.3"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingJ->AddHostRouteTo (iAC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingJ->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingJ->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.3"), iIJ.GetAddress (1,0), rvector ({1},{1}));//I->F
-  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.3"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingI->AddHostRouteTo (iAC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingI->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingI->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.3"), iIJ.GetAddress (1,0), rvector ({1},{1}));//F->E
-  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.3"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//F->E(TCP)
-  staticRoutingF->AddHostRouteTo (iAC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//F->E(TCP)
-  staticRoutingF->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//F->E(TCP)
-  staticRoutingF->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//F->E(TCP)
-  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.3"), iIJ.GetAddress (1,0), rvector ({1},{1}));//E->C
-  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.3"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
-  staticRoutingE->AddHostRouteTo (iAC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
-  staticRoutingE->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
-  staticRoutingE->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
 
   staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.4"), fromLocal, rvector ({1},{1}));//J->I(normal packet)
   staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iIJ.GetAddress (1,0), rvector ({1},{1}));//J->I(TCP)
@@ -1882,32 +1815,6 @@ main (int argc, char *argv[])
   staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.11"), ifInAddrJ.GetLocal (), rvector ({2},{1}));//J->K(TCP)
   staticRoutingJ->AddHostRouteTo (iGK.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({2},{1}));//J->K(TCP)
   staticRoutingJ->AddHostRouteTo (iJK.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({2},{1}));//J->K(TCP)
-
-  staticRoutingK->AddHostRouteTo (Ipv4Address ("172.16.1.1"), fromLocal, rvector ({2},{1}));//K->J(normal packet)
-  staticRoutingK->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({2},{1}));//K->J(TCP)
-  staticRoutingK->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({2},{1}));//K->J(TCP)
-  staticRoutingK->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({2},{1}));//K->J(TCP)
-  staticRoutingK->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({2},{1}));//K->J(TCP)
-  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//J->I
-  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingJ->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingJ->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//J->I(TCP)
-  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//I->F
-  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingI->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingI->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//I->F(TCP)
-  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({2},{1}));//F->D
-  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({2},{1}));//F->D(TCP)
-  staticRoutingF->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({2},{1}));//F->D(TCP)
-  staticRoutingF->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({2},{1}));//F->D(TCP)
-  staticRoutingD->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//D->B
-  staticRoutingD->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//D->B(TCP)
-  staticRoutingD->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//D->B(TCP)
-  staticRoutingD->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//D->B(TCP)
-  staticRoutingB->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//B->A
-  staticRoutingB->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//B->A(TCP)
-  staticRoutingB->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//B->A(TCP)
-  staticRoutingB->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//B->A(TCP)
 
   staticRoutingK->AddHostRouteTo (Ipv4Address ("172.16.1.2"), fromLocal, rvector ({2},{1}));//K->J(normal packet)
   staticRoutingK->AddHostRouteTo (Ipv4Address ("172.16.1.2"), iJK.GetAddress (1,0), rvector ({2},{1}));//K->J(TCP)
@@ -2046,7 +1953,153 @@ main (int argc, char *argv[])
   staticRoutingK->AddHostRouteTo (iIJ.GetAddress (1,0), ifInAddrK.GetLocal (), rvector ({2},{1}));//K->J(TCP)
   staticRoutingK->AddHostRouteTo (iJK.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({2},{1}));//K->J(TCP)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+  staticRoutingK->AddHostRouteTo (Ipv4Address ("172.16.1.1"), fromLocal, rvector ({1,2},{0.515,0.485}));//K->G,J(normal packet)
+  staticRoutingK->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iGK.GetAddress (1,0), rvector ({1,2},{0.515,0.485}));//K->G,J(TCP)
+  staticRoutingK->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1,2},{0.515,0.485}));//K->G,J(TCP)
+  staticRoutingK->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1,2},{0.515,0.485}));//K->G,J(TCP)
+  staticRoutingK->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1,2},{0.515,0.485}));//K->G,J(TCP)
+  staticRoutingK->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1,2},{0.515,0.485}));//K->G,J(TCP)
+  staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iGK.GetAddress (1,0), rvector ({1},{1}));//G->H
+  staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//G->H
+  staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//G->H(TCP)
+  staticRoutingG->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//G->H(TCP)
+  staticRoutingG->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//G->H(TCP)
+  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iGK.GetAddress (1,0), rvector ({1},{1}));//H->E
+  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//H->E
+  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//H->E(TCP)
+  staticRoutingH->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//H->E(TCP)
+  staticRoutingH->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//H->E(TCP)
+  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iGK.GetAddress (1,0), rvector ({1},{1}));//E->C
+  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//E->C
+  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//E->C(TCP)
+  staticRoutingE->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//E->C(TCP)
+  staticRoutingE->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//E->C(TCP)
+  staticRoutingC->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iGK.GetAddress (1,0), rvector ({1},{1}));//C->A
+  staticRoutingC->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//C->A
+  staticRoutingC->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//C->A(TCP)
+  staticRoutingC->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//C->A(TCP)
+  staticRoutingC->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//C->A(TCP)
+  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//J->I
+  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iGK.GetAddress (1,0), rvector ({1},{1}));//J->I
+  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingJ->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingJ->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//I->F
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iGK.GetAddress (1,0), rvector ({1},{1}));//I->F
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingI->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingI->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({2},{1}));//F->D
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iGK.GetAddress (1,0), rvector ({2},{1}));//F->D
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({2},{1}));//F->D(TCP)
+  staticRoutingF->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({2},{1}));//F->D(TCP)
+  staticRoutingF->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({2},{1}));//F->D(TCP)
+  staticRoutingD->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//D->B
+  staticRoutingD->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iGK.GetAddress (1,0), rvector ({1},{1}));//D->B
+  staticRoutingD->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//D->B(TCP)
+  staticRoutingD->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//D->B(TCP)
+  staticRoutingD->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//D->B(TCP)
+  staticRoutingB->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iJK.GetAddress (1,0), rvector ({1},{1}));//B->A
+  staticRoutingB->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iGK.GetAddress (1,0), rvector ({1},{1}));//B->A
+  staticRoutingB->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrK.GetLocal (), rvector ({1},{1}));//B->A(TCP)
+  staticRoutingB->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//B->A(TCP)
+  staticRoutingB->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrK.GetLocal (), rvector ({1},{1}));//B->A(TCP)
+
+
+
+  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.3"), fromLocal, rvector ({1},{1}));//J->I(normal packet)
+  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.3"), iIJ.GetAddress (1,0), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.3"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingJ->AddHostRouteTo (iAC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingJ->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingJ->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.3"), iIJ.GetAddress (1,0), rvector ({1},{1}));//I->F
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.3"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingI->AddHostRouteTo (iAC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingI->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingI->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.3"), iIJ.GetAddress (1,0), rvector ({1,2},{0.963,0.37}));//F->E,D
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.3"), ifInAddrJ.GetLocal (), rvector ({1,2},{0.963,0.37}));//F->E,D(TCP)
+  staticRoutingF->AddHostRouteTo (iAC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1,2},{0.963,0.37}));//F->E,D(TCP)
+  staticRoutingF->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1,2},{0.963,0.37}));//F->E,D(TCP)
+  staticRoutingF->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1,2},{0.963,0.37}));//F->E,D(TCP)
+  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.3"), iIJ.GetAddress (1,0), rvector ({1},{1}));//E->C
+  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.3"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
+  staticRoutingE->AddHostRouteTo (iAC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
+  staticRoutingE->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
+  staticRoutingE->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
+  staticRoutingD->AddHostRouteTo (Ipv4Address ("172.16.1.3"), iIJ.GetAddress (1,0), rvector ({1},{1}));//D->B
+  staticRoutingD->AddHostRouteTo (Ipv4Address ("172.16.1.3"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//D->B(TCP)
+  staticRoutingD->AddHostRouteTo (iAC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//D->B(TCP)
+  staticRoutingD->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//D->B(TCP)
+  staticRoutingD->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//D->B(TCP)
+  staticRoutingB->AddHostRouteTo (Ipv4Address ("172.16.1.3"), iIJ.GetAddress (1,0), rvector ({2},{1}));//B->C
+  staticRoutingB->AddHostRouteTo (Ipv4Address ("172.16.1.3"), ifInAddrJ.GetLocal (), rvector ({2},{1}));//B->C(TCP)
+  staticRoutingB->AddHostRouteTo (iAC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({2},{1}));//B->C(TCP)
+  staticRoutingB->AddHostRouteTo (iBC.GetAddress (1,0), ifInAddrJ.GetLocal (), rvector ({2},{1}));//B->C(TCP)
+  staticRoutingB->AddHostRouteTo (iCE.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({2},{1}));//B->C(TCP)
+
+
+
+  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), fromLocal, rvector ({1},{1}));//J->I(normal packet)
+  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingJ->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingJ->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingJ->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//J->I(TCP)
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//I->F
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingI->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingI->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1,2},{0.038,0.962}));//F->E,D
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1,2},{0.038,0.962}));//F->E,D(TCP)
+  staticRoutingF->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1,2},{0.038,0.962}));//F->E,D(TCP)
+  staticRoutingF->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1,2},{0.038,0.962}));//F->E,D(TCP)
+  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//E->C
+  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
+  staticRoutingE->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
+  staticRoutingE->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//E->C(TCP)
+  staticRoutingC->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//C->A
+  staticRoutingC->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//C->A(TCP)
+  staticRoutingC->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//C->A(TCP)
+  staticRoutingC->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//C->A(TCP)
+  staticRoutingD->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//D->B
+  staticRoutingD->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//D->B(TCP)
+  staticRoutingD->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//D->B(TCP)
+  staticRoutingD->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//D->B(TCP)
+  staticRoutingB->AddHostRouteTo (Ipv4Address ("172.16.1.1"), iIJ.GetAddress (1,0), rvector ({1},{1}));//B->A
+  staticRoutingB->AddHostRouteTo (Ipv4Address ("172.16.1.1"), ifInAddrJ.GetLocal (), rvector ({1},{1}));//B->A(TCP)
+  staticRoutingB->AddHostRouteTo (iAB.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//B->A(TCP)
+  staticRoutingB->AddHostRouteTo (iAC.GetAddress (0,0), ifInAddrJ.GetLocal (), rvector ({1},{1}));//B->A(TCP)
+
+
+
+  staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.4"), fromLocal, rvector ({1},{1}));//G->H(normal packet)
+  staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iGH.GetAddress (0,0), rvector ({1},{1}));//G->H(TCP)
+  staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.4"), ifInAddrG.GetLocal (), rvector ({1},{1}));//G->H(TCP)
+  staticRoutingG->AddHostRouteTo (iBD.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({1},{1}));//G->H(TCP)
+  staticRoutingG->AddHostRouteTo (iDF.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({1},{1}));//G->H(TCP)
+  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iGH.GetAddress (0,0), rvector ({1,3},{0.851,0.149}));//H->E,I
+  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.4"), ifInAddrG.GetLocal (), rvector ({1,3},{0.851,0.149}));//H->E,I(TCP)
+  staticRoutingH->AddHostRouteTo (iBD.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({1,3},{0.851,0.149}));//H->E,I(TCP)
+  staticRoutingH->AddHostRouteTo (iDF.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({1,3},{0.851,0.149}));//H->E,I(TCP)
+  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iGH.GetAddress (0,0), rvector ({2},{1}));//E->F
+  staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.4"), ifInAddrG.GetLocal (), rvector ({2},{1}));//E->F(TCP)
+  staticRoutingE->AddHostRouteTo (iBD.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({2},{1}));//E->F(TCP)
+  staticRoutingE->AddHostRouteTo (iDF.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({2},{1}));//E->F(TCP)
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iGH.GetAddress (0,0), rvector ({2},{1}));//F->D
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.4"), ifInAddrG.GetLocal (), rvector ({2},{1}));//F->D(TCP)
+  staticRoutingF->AddHostRouteTo (iBD.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({2},{1}));//F->D(TCP)
+  staticRoutingF->AddHostRouteTo (iDF.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({2},{1}));//F->D(TCP)
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iGH.GetAddress (0,0), rvector ({1},{1}));//I->F
+  staticRoutingI->AddHostRouteTo (Ipv4Address ("172.16.1.4"), ifInAddrG.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingI->AddHostRouteTo (iBD.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingI->AddHostRouteTo (iDF.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({1},{1}));//I->F(TCP)
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.4"), iGH.GetAddress (0,0), rvector ({2},{1}));//F->D
+  staticRoutingF->AddHostRouteTo (Ipv4Address ("172.16.1.4"), ifInAddrG.GetLocal (), rvector ({2},{1}));//F->D(TCP)
+  staticRoutingF->AddHostRouteTo (iBD.GetAddress (1,0), ifInAddrG.GetLocal (), rvector ({2},{1}));//F->D(TCP)
+  staticRoutingF->AddHostRouteTo (iDF.GetAddress (0,0), ifInAddrG.GetLocal (), rvector ({2},{1}));//F->D(TCP)
 
   // Setup sink App
     int sinkPort = 9;
