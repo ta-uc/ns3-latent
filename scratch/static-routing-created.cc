@@ -1991,10 +1991,10 @@ main (int argc, char *argv[])
   staticRoutingE->AddHostRouteTo (Ipv4Address ("172.16.1.11"), ifInAddrE.GetLocal (), rvector ({3},{1}));//E->H(TCP)
   staticRoutingE->AddHostRouteTo (iGK.GetAddress (1,0), ifInAddrE.GetLocal (), rvector ({3},{1}));//E->H(TCP)
   staticRoutingE->AddHostRouteTo (iJK.GetAddress (1,0), ifInAddrE.GetLocal (), rvector ({3},{1}));//E->H(TCP)
-  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.11"), iEH.GetAddress (0,0), rvector ({2,3},{0.647,0.353}));//H->G
-  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.11"), ifInAddrE.GetLocal (), rvector ({2,3},{0.647,0.353}));//H->G(TCP)
-  staticRoutingH->AddHostRouteTo (iGK.GetAddress (1,0), ifInAddrE.GetLocal (), rvector ({2,3},{0.647,0.353}));//H->G(TCP)
-  staticRoutingH->AddHostRouteTo (iJK.GetAddress (1,0), ifInAddrE.GetLocal (), rvector ({2,3},{0.647,0.353}));//H->G(TCP)
+  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.11"), iEH.GetAddress (0,0), rvector ({2,3},{0.647,0.353}));//H->G,I
+  staticRoutingH->AddHostRouteTo (Ipv4Address ("172.16.1.11"), ifInAddrE.GetLocal (), rvector ({2,3},{0.647,0.353}));//H->G,I(TCP)
+  staticRoutingH->AddHostRouteTo (iGK.GetAddress (1,0), ifInAddrE.GetLocal (), rvector ({2,3},{0.647,0.353}));//H->G,I(TCP)
+  staticRoutingH->AddHostRouteTo (iJK.GetAddress (1,0), ifInAddrE.GetLocal (), rvector ({2,3},{0.647,0.353}));//H->G,I(TCP)
   staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.11"), iEH.GetAddress (0,0), rvector ({2},{1}));//G->K
   staticRoutingG->AddHostRouteTo (Ipv4Address ("172.16.1.11"), ifInAddrE.GetLocal (), rvector ({2},{1}));//G->K(TCP)
   staticRoutingG->AddHostRouteTo (iGK.GetAddress (1,0), ifInAddrE.GetLocal (), rvector ({2},{1}));//G->K(TCP)
