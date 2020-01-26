@@ -201,7 +201,7 @@ print("linktraffic\n", link_traf[:, i])
 # print("linklatent\n", link_latent[:, i])
 
 print("linklossrate\n", link_loss_rate[:, i])
-
+
 # a = np.ones(110) * 5
 # b = np.dot(route, a)
 
