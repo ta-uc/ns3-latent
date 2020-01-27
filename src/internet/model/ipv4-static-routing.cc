@@ -33,6 +33,7 @@
 #include "ns3/output-stream-wrapper.h"
 #include "ipv4-static-routing.h"
 #include "ipv4-routing-table-entry.h"
+#include "tcp-header.h"
 
 using std::make_pair;
 
@@ -243,7 +244,7 @@ Ipv4StaticRouting::RemoveMulticastRoute (uint32_t index)
 }
 
 Ptr<Ipv4Route>
-Ipv4StaticRouting::LookupStatic (Ipv4Address dest, Ipv4Address source,  Ptr<NetDevice> oif)
+Ipv4StaticRouting::LookupStatic (Ipv4Address dest, double destPort, Ipv4Address source,  Ptr<NetDevice> oif)
 {
   NS_LOG_FUNCTION (this << dest << " " << oif);
   Ptr<Ipv4Route> rtentry = 0;
@@ -304,7 +305,7 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address dest, Ipv4Address source,  Ptr<NetD
           Ipv4RoutingTableEntry* route = (j);
           std::vector <int> interfaces = route->GetInterfaces ();
           std::vector <double> interprobs = route->GetInterProbs ();
-          double random = (double)rand()/RAND_MAX;
+          double destPortNorm = (double)destPort/100;
           double start = 0;
           double end = 0;
           uint32_t interfaceIdx = 0;
@@ -312,21 +313,24 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address dest, Ipv4Address source,  Ptr<NetD
                 {
                   if (j == 0)
                   {
-                    if (random < interprobs[j])
+                    if (destPortNorm <= interprobs[j])
                     {
                       interfaceIdx = interfaces[j];
+                      break;
+                    } else {
+                      interfaceIdx = interfaces[0];
                       break;
                     }
                   } else {
                     start += interprobs[j-1];
                     end = start + interprobs[j];
-                    if (start <= random && random < end)
+                    if (start < destPortNorm && destPortNorm <= end)
                     {
                       interfaceIdx = interfaces[j];
                       break;
                     } else {
-                      std::cout << "NO" << std::endl;
                       interfaceIdx = interfaces[0];
+                      break;
                     }
                   }
                 }
@@ -527,7 +531,7 @@ Ipv4StaticRouting::RouteOutput (Ptr<Packet> p, const Ipv4Header &header, Ptr<Net
       // So, we just log it and fall through to LookupStatic ()
       NS_LOG_LOGIC ("RouteOutput()::Multicast destination");
     }
-  rtentry = LookupStatic (destination, source, oif);
+  rtentry = LookupStatic (destination, 0, source,  oif);
   if (rtentry)
     { 
       sockerr = Socket::ERROR_NOTERROR;
@@ -545,7 +549,9 @@ Ipv4StaticRouting::RouteInput  (Ptr<const Packet> p, const Ipv4Header &ipHeader,
                                 LocalDeliverCallback lcb, ErrorCallback ecb)
 {
   NS_LOG_FUNCTION (this << p << ipHeader << ipHeader.GetSource () << ipHeader.GetDestination () << idev << &ucb << &mcb << &lcb << &ecb);
-
+  TcpHeader tcph;
+  p->PeekHeader(tcph);
+  double destPort = tcph.GetDestinationPort();
   NS_ASSERT (m_ipv4 != 0);
   // Check if input device supports IP 
   NS_ASSERT (m_ipv4->GetInterfaceForDevice (idev) >= 0);
@@ -598,7 +604,7 @@ Ipv4StaticRouting::RouteInput  (Ptr<const Packet> p, const Ipv4Header &ipHeader,
       return true;
     }
   // Next, try to find a route
-  Ptr<Ipv4Route> rtentry = LookupStatic (ipHeader.GetDestination (), ipHeader.GetSource ());
+  Ptr<Ipv4Route> rtentry = LookupStatic (ipHeader.GetDestination (), destPort, ipHeader.GetSource ());
   if (rtentry != 0)
     {
       NS_LOG_LOGIC ("Found unicast destination- calling unicast callback");
