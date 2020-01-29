@@ -1337,7 +1337,7 @@ main (int argc, char *argv[])
 
   // Setup sink App
 
-    std::array<ApplicationContainer, 11*100> sinkApps;
+    std::array<ApplicationContainer, 11*10> sinkApps;
     for(int i = 0; i <= 10; i++){
       for (int j = 1; j <= 10; j++)
       {
@@ -1389,30 +1389,30 @@ main (int argc, char *argv[])
   // Trace settings
 
   // Animation settings
-    // AnimationInterface::SetConstantPosition (c.Get (0),2.0,2.0);
-    // AnimationInterface::SetConstantPosition (c.Get (1),2.0,4.0);
-    // AnimationInterface::SetConstantPosition (c.Get (2),4.0,4.0);
-    // AnimationInterface::SetConstantPosition (c.Get (3),3.0,6.0);
-    // AnimationInterface::SetConstantPosition (c.Get (4),6.0,4.0);
-    // AnimationInterface::SetConstantPosition (c.Get (5),6.0,6.0);
-    // AnimationInterface::SetConstantPosition (c.Get (6),8.0,3.0);
-    // AnimationInterface::SetConstantPosition (c.Get (7),8.0,4.0);
-    // AnimationInterface::SetConstantPosition (c.Get (8),8.0,6.0);
-    // AnimationInterface::SetConstantPosition (c.Get (9),9.0,5.0);
-    // AnimationInterface::SetConstantPosition (c.Get (10),10.0,4.0);
+    AnimationInterface::SetConstantPosition (c.Get (0),2.0,2.0);
+    AnimationInterface::SetConstantPosition (c.Get (1),2.0,4.0);
+    AnimationInterface::SetConstantPosition (c.Get (2),4.0,4.0);
+    AnimationInterface::SetConstantPosition (c.Get (3),3.0,6.0);
+    AnimationInterface::SetConstantPosition (c.Get (4),6.0,4.0);
+    AnimationInterface::SetConstantPosition (c.Get (5),6.0,6.0);
+    AnimationInterface::SetConstantPosition (c.Get (6),8.0,3.0);
+    AnimationInterface::SetConstantPosition (c.Get (7),8.0,4.0);
+    AnimationInterface::SetConstantPosition (c.Get (8),8.0,6.0);
+    AnimationInterface::SetConstantPosition (c.Get (9),9.0,5.0);
+    AnimationInterface::SetConstantPosition (c.Get (10),10.0,4.0);
 
-    // AnimationInterface::SetConstantPosition (c_e.Get (0),1.5,2.0);
-    // AnimationInterface::SetConstantPosition (c_e.Get (1),1.5,4.0);
-    // AnimationInterface::SetConstantPosition (c_e.Get (2),4.0,4.5);
-    // AnimationInterface::SetConstantPosition (c_e.Get (3),3.0,6.5);
-    // AnimationInterface::SetConstantPosition (c_e.Get (4),6.0,3.5);
-    // AnimationInterface::SetConstantPosition (c_e.Get (5),6.0,6.5);
-    // AnimationInterface::SetConstantPosition (c_e.Get (6),8.0,2.5);
-    // AnimationInterface::SetConstantPosition (c_e.Get (7),8.5,4.0);
-    // AnimationInterface::SetConstantPosition (c_e.Get (8),8.0,6.5);
-    // AnimationInterface::SetConstantPosition (c_e.Get (9),9.5,5.5);
-    // AnimationInterface::SetConstantPosition (c_e.Get (10),10.5,4.0);
-    // AnimationInterface anim ("./Data/static-route-port.xml");
+    AnimationInterface::SetConstantPosition (c_e.Get (0),1.5,2.0);
+    AnimationInterface::SetConstantPosition (c_e.Get (1),1.5,4.0);
+    AnimationInterface::SetConstantPosition (c_e.Get (2),4.0,4.5);
+    AnimationInterface::SetConstantPosition (c_e.Get (3),3.0,6.5);
+    AnimationInterface::SetConstantPosition (c_e.Get (4),6.0,3.5);
+    AnimationInterface::SetConstantPosition (c_e.Get (5),6.0,6.5);
+    AnimationInterface::SetConstantPosition (c_e.Get (6),8.0,2.5);
+    AnimationInterface::SetConstantPosition (c_e.Get (7),8.5,4.0);
+    AnimationInterface::SetConstantPosition (c_e.Get (8),8.0,6.5);
+    AnimationInterface::SetConstantPosition (c_e.Get (9),9.5,5.5);
+    AnimationInterface::SetConstantPosition (c_e.Get (10),10.5,4.0);
+    AnimationInterface anim ("./Data/static-route-port-test.xml");
   //Animation settings end
 
   Simulator::Stop (Seconds (END_TIME));

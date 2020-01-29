@@ -305,35 +305,35 @@ Ipv4StaticRouting::LookupStatic (Ipv4Address dest, double destPort, Ipv4Address 
           Ipv4RoutingTableEntry* route = (j);
           std::vector <int> interfaces = route->GetInterfaces ();
           std::vector <double> interprobs = route->GetInterProbs ();
-          double destPortNorm = (double)destPort/100;
+          double destPortNorm = (double)destPort/10;
           double start = 0;
           double end = 0;
           uint32_t interfaceIdx = 0;
-          for (uint j = 0; j < interfaces.size (); j++)
+          if (destPortNorm > 1){
+            interfaceIdx = interfaces[0];
+          }else{
+            for (uint j = 0; j < interfaces.size (); j++){
+              if (j == 0)
+              {
+                if (destPortNorm <= interprobs[j])
                 {
-                  if (j == 0)
-                  {
-                    if (destPortNorm <= interprobs[j])
-                    {
-                      interfaceIdx = interfaces[j];
-                      break;
-                    } else {
-                      interfaceIdx = interfaces[0];
-                      break;
-                    }
-                  } else {
-                    start += interprobs[j-1];
-                    end = start + interprobs[j];
-                    if (start < destPortNorm && destPortNorm <= end)
-                    {
-                      interfaceIdx = interfaces[j];
-                      break;
-                    } else {
-                      interfaceIdx = interfaces[0];
-                      break;
-                    }
-                  }
+                  interfaceIdx = interfaces[j];
+                  break;
+                } 
+              } else {
+                start += interprobs[j-1];
+                end = start + interprobs[j];
+                if (start < destPortNorm && destPortNorm <= end)
+                {
+                  interfaceIdx = interfaces[j];
+                  break;
+                } else {
+                  interfaceIdx = interfaces[0];
+                  break;
                 }
+              }
+            }
+          }
           rtentry = Create<Ipv4Route> ();
           rtentry->SetDestination (route->GetDest ());
           rtentry->SetSource (m_ipv4->SourceAddressSelection (interfaceIdx, route->GetDest ()));
