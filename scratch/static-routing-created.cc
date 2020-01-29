@@ -21,8 +21,8 @@
 
 #define PACKET_SIZE 1300 //bytes 分割・統合されないサイズにする
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
-#define ONE_DATUM 100 //パケットで1データ
-#define DEFAULT_SEND_RATE "0.05Mbps"
+#define ONE_DATUM 100 //パケットで1コネクション
+#define DEFAULT_SEND_RATE "0.5Mbps"
 #define NUM_PACKETS 30000
 #define END_TIME 41 //Seconds
 #define INTERVAL 20 //Seconds
@@ -122,8 +122,8 @@ MyApp::Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, u
   m_targetRate = dataRate.GetBitRate ();
 
   AsciiTraceHelper ascii;
-  m_cwndStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".cwnd");
-  m_datarateStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".drate");
+  // m_cwndStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".cwnd");
+  // m_datarateStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".drate");
   m_lossStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".loss");
   m_tcpTxStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".thr");
 }
@@ -178,15 +178,17 @@ MyApp::SendPacket (void)
 {
   Ptr<Packet> packet = Create<Packet> (m_packetSize);
   m_socket->Send (packet);
-
+  
   if(++m_packetsSent % ONE_DATUM == 0)   // １データ送信でコネクション終了
   {
     StopApplication ();
-    double lossRate = m_packetLoss / (double) m_tcpsent;
-    ChangeDataRate (lossRate);
-
+    if (m_tcpsent != 0)
+    {
+      double lossRate = m_packetLoss / (double) m_tcpsent;
+      ChangeDataRate (lossRate);
+    }
     // Trace datarate, lossrate
-    *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
+    // *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
     
     if (m_packetsSent < m_nPackets)
     {
@@ -242,7 +244,13 @@ void
 MyApp::woTCPTx (double time)
 {
   *m_tcpTxStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_tcpsentSize / time << std::endl;
-  *m_lossStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_packetLossParTime / (double) m_tcpsentCount  << std::endl;
+  if (m_tcpsentCount != 0 && m_packetLossParTime != 0)
+  {
+    *m_lossStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_packetLossParTime / (double) m_tcpsentCount  << std::endl;
+    
+  } else {
+    *m_lossStream->GetStream () << Simulator::Now ().GetSeconds () << " " << 0 << std::endl;
+  }
   m_tcpsentSize = 0;
   m_tcpsentCount = 0;
   m_packetLossParTime = 0;
@@ -305,7 +313,7 @@ main (int argc, char *argv[])
   srand((unsigned)time(NULL));
 
 /////////////////////////////////////
-  NodeContainer c,c_e;
+  NodeContainer c, c_e;
   c.Create (11);
   c_e.Create (11);
 
@@ -343,7 +351,7 @@ main (int argc, char *argv[])
   PointToPointHelper p2p, p2p_l;
   p2p.SetChannelAttribute ("Delay", StringValue ("1ms"));
   p2p_l.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
-  // p2p_l.SetDeviceAttribute ("Delay", StringValue ("1ms"));
+  
   NetDeviceContainer dAB = p2p.Install (nAB);
   NetDeviceContainer dAC = p2p.Install (nAC);
   NetDeviceContainer dBC = p2p.Install (nBC);
@@ -371,34 +379,34 @@ main (int argc, char *argv[])
   NetDeviceContainer dJJe = p2p_l.Install (nJJe);
   NetDeviceContainer dKKe = p2p_l.Install (nKKe);
 
-  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
-  Config::Set("/NodeList/0/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
-  Config::Set("/NodeList/1/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("24Mbps")));
-  Config::Set("/NodeList/1/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("36Mbps")));
-  Config::Set("/NodeList/1/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("54Mbps")));
-  Config::Set("/NodeList/2/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("36Mbps")));
-  Config::Set("/NodeList/2/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
-  Config::Set("/NodeList/2/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("90Mbps")));
-  Config::Set("/NodeList/3/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("54Mbps")));
-  Config::Set("/NodeList/3/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("78Mbps")));
-  Config::Set("/NodeList/4/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("90Mbps")));
-  Config::Set("/NodeList/4/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("54Mbps")));
-  Config::Set("/NodeList/4/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("90Mbps")));
-  Config::Set("/NodeList/5/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("54Mbps")));
-  Config::Set("/NodeList/5/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("78Mbps")));
-  Config::Set("/NodeList/5/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("90Mbps")));
-  Config::Set("/NodeList/6/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("72Mbps")));
-  Config::Set("/NodeList/6/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("36Mbps")));
-  Config::Set("/NodeList/7/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("90Mbps")));
-  Config::Set("/NodeList/7/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("66Mbps")));
-  Config::Set("/NodeList/7/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("36Mbps")));
-  Config::Set("/NodeList/8/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("90Mbps")));
-  Config::Set("/NodeList/8/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("42Mbps")));
-  Config::Set("/NodeList/8/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("72Mbps")));
-  Config::Set("/NodeList/9/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("78Mbps")));
-  Config::Set("/NodeList/9/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("42Mbps")));
-  Config::Set("/NodeList/10/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
-  Config::Set("/NodeList/10/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("36Mbps")));
+  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/0/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/1/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/1/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/1/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/2/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/2/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/2/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/3/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/3/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/4/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/4/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/4/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/5/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/5/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/5/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/6/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/6/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/7/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/7/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/7/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/8/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/8/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/8/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/9/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/9/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/10/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
+  Config::Set("/NodeList/10/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("100Mbps")));
 
   TrafficControlHelper tch;
   tch.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
@@ -506,7 +514,6 @@ main (int argc, char *argv[])
   Ipv4InterfaceContainer iJK = ipv4.Assign (dJK);
 
   std::vector <ns3::Ipv4Address> sinkAddresses;
-
   ipv4.SetBase ("192.168.1.0", "255.255.255.0");
   Ipv4InterfaceContainer iAAe = ipv4.Assign (dAAe);
   sinkAddresses.push_back(iAAe.GetAddress(1));
@@ -540,7 +547,6 @@ main (int argc, char *argv[])
   ipv4.SetBase ("192.168.11.0", "255.255.255.0");
   Ipv4InterfaceContainer iKKe = ipv4.Assign (dKKe);
   sinkAddresses.push_back(iKKe.GetAddress(1));
-
 
   Ptr<Ipv4> ipv4A = c.Get (0)->GetObject<Ipv4> ();
   Ptr<Ipv4> ipv4B = c.Get (1)->GetObject<Ipv4> ();
@@ -603,17 +609,6 @@ main (int argc, char *argv[])
   staticRoutingAe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
   staticRoutingAe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
   staticRoutingAe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingAe->AddHostRouteTo (iBBe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingAe->AddHostRouteTo (iCCe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingAe->AddHostRouteTo (iDDe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingAe->AddHostRouteTo (iEEe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingAe->AddHostRouteTo (iFFe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingAe->AddHostRouteTo (iGGe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingAe->AddHostRouteTo (iHHe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingAe->AddHostRouteTo (iIIe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingAe->AddHostRouteTo (iJJe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingAe->AddHostRouteTo (iKKe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
-
   staticRoutingBe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
   staticRoutingBe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
   staticRoutingBe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
@@ -624,6 +619,106 @@ main (int argc, char *argv[])
   staticRoutingBe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
   staticRoutingBe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
   staticRoutingBe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingAe->AddHostRouteTo (iBBe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
+  staticRoutingAe->AddHostRouteTo (iCCe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
+  staticRoutingAe->AddHostRouteTo (iDDe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
+  staticRoutingAe->AddHostRouteTo (iEEe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
+  staticRoutingAe->AddHostRouteTo (iFFe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
+  staticRoutingAe->AddHostRouteTo (iGGe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
+  staticRoutingAe->AddHostRouteTo (iHHe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
+  staticRoutingAe->AddHostRouteTo (iIIe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
+  staticRoutingAe->AddHostRouteTo (iJJe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
+  staticRoutingAe->AddHostRouteTo (iKKe.GetAddress (1), iAAe.GetAddress (1), rvector ({1},{1}));
   staticRoutingBe->AddHostRouteTo (iAAe.GetAddress (1), iBBe.GetAddress (1), rvector ({1},{1}));
   staticRoutingBe->AddHostRouteTo (iCCe.GetAddress (1), iBBe.GetAddress (1), rvector ({1},{1}));
   staticRoutingBe->AddHostRouteTo (iDDe.GetAddress (1), iBBe.GetAddress (1), rvector ({1},{1}));
@@ -634,19 +729,8 @@ main (int argc, char *argv[])
   staticRoutingBe->AddHostRouteTo (iIIe.GetAddress (1), iBBe.GetAddress (1), rvector ({1},{1}));
   staticRoutingBe->AddHostRouteTo (iJJe.GetAddress (1), iBBe.GetAddress (1), rvector ({1},{1}));
   staticRoutingBe->AddHostRouteTo (iKKe.GetAddress (1), iBBe.GetAddress (1), rvector ({1},{1}));
-
-  staticRoutingCe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingCe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingCe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingCe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingCe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingCe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingCe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingCe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingCe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingCe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingCe->AddHostRouteTo (iBBe.GetAddress (1), iCCe.GetAddress (1), rvector ({1},{1}));
   staticRoutingCe->AddHostRouteTo (iAAe.GetAddress (1), iCCe.GetAddress (1), rvector ({1},{1}));
+  staticRoutingCe->AddHostRouteTo (iBBe.GetAddress (1), iCCe.GetAddress (1), rvector ({1},{1}));
   staticRoutingCe->AddHostRouteTo (iDDe.GetAddress (1), iCCe.GetAddress (1), rvector ({1},{1}));
   staticRoutingCe->AddHostRouteTo (iEEe.GetAddress (1), iCCe.GetAddress (1), rvector ({1},{1}));
   staticRoutingCe->AddHostRouteTo (iFFe.GetAddress (1), iCCe.GetAddress (1), rvector ({1},{1}));
@@ -655,20 +739,9 @@ main (int argc, char *argv[])
   staticRoutingCe->AddHostRouteTo (iIIe.GetAddress (1), iCCe.GetAddress (1), rvector ({1},{1}));
   staticRoutingCe->AddHostRouteTo (iJJe.GetAddress (1), iCCe.GetAddress (1), rvector ({1},{1}));
   staticRoutingCe->AddHostRouteTo (iKKe.GetAddress (1), iCCe.GetAddress (1), rvector ({1},{1}));
-
-  staticRoutingDe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingDe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingDe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingDe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingDe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingDe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingDe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingDe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingDe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingDe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingDe->AddHostRouteTo (iAAe.GetAddress (1), iDDe.GetAddress (1), rvector ({1},{1}));
   staticRoutingDe->AddHostRouteTo (iBBe.GetAddress (1), iDDe.GetAddress (1), rvector ({1},{1}));
   staticRoutingDe->AddHostRouteTo (iCCe.GetAddress (1), iDDe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingDe->AddHostRouteTo (iAAe.GetAddress (1), iDDe.GetAddress (1), rvector ({1},{1}));
   staticRoutingDe->AddHostRouteTo (iEEe.GetAddress (1), iDDe.GetAddress (1), rvector ({1},{1}));
   staticRoutingDe->AddHostRouteTo (iFFe.GetAddress (1), iDDe.GetAddress (1), rvector ({1},{1}));
   staticRoutingDe->AddHostRouteTo (iGGe.GetAddress (1), iDDe.GetAddress (1), rvector ({1},{1}));
@@ -676,101 +749,47 @@ main (int argc, char *argv[])
   staticRoutingDe->AddHostRouteTo (iIIe.GetAddress (1), iDDe.GetAddress (1), rvector ({1},{1}));
   staticRoutingDe->AddHostRouteTo (iJJe.GetAddress (1), iDDe.GetAddress (1), rvector ({1},{1}));
   staticRoutingDe->AddHostRouteTo (iKKe.GetAddress (1), iDDe.GetAddress (1), rvector ({1},{1}));
-
-  staticRoutingEe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingEe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingEe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingEe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingEe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingEe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingEe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingEe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingEe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingEe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingEe->AddHostRouteTo (iAAe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
   staticRoutingEe->AddHostRouteTo (iBBe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
   staticRoutingEe->AddHostRouteTo (iCCe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
   staticRoutingEe->AddHostRouteTo (iDDe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingEe->AddHostRouteTo (iAAe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
   staticRoutingEe->AddHostRouteTo (iFFe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
   staticRoutingEe->AddHostRouteTo (iGGe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
   staticRoutingEe->AddHostRouteTo (iHHe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
   staticRoutingEe->AddHostRouteTo (iIIe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
   staticRoutingEe->AddHostRouteTo (iJJe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
   staticRoutingEe->AddHostRouteTo (iKKe.GetAddress (1), iEEe.GetAddress (1), rvector ({1},{1}));
-
-  staticRoutingFe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingFe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingFe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingFe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingFe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingFe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingFe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingFe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingFe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingFe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingFe->AddHostRouteTo (iAAe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
   staticRoutingFe->AddHostRouteTo (iBBe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
   staticRoutingFe->AddHostRouteTo (iCCe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
   staticRoutingFe->AddHostRouteTo (iDDe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
   staticRoutingFe->AddHostRouteTo (iEEe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingFe->AddHostRouteTo (iAAe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
   staticRoutingFe->AddHostRouteTo (iGGe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
   staticRoutingFe->AddHostRouteTo (iHHe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
   staticRoutingFe->AddHostRouteTo (iIIe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
   staticRoutingFe->AddHostRouteTo (iJJe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
   staticRoutingFe->AddHostRouteTo (iKKe.GetAddress (1), iFFe.GetAddress (1), rvector ({1},{1}));
-
-  staticRoutingGe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingGe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingGe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingGe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingGe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingGe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingGe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingGe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingGe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingGe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingGe->AddHostRouteTo (iAAe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
   staticRoutingGe->AddHostRouteTo (iBBe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
   staticRoutingGe->AddHostRouteTo (iCCe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
   staticRoutingGe->AddHostRouteTo (iDDe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
   staticRoutingGe->AddHostRouteTo (iEEe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
   staticRoutingGe->AddHostRouteTo (iFFe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingGe->AddHostRouteTo (iAAe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
   staticRoutingGe->AddHostRouteTo (iHHe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
   staticRoutingGe->AddHostRouteTo (iIIe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
   staticRoutingGe->AddHostRouteTo (iJJe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
   staticRoutingGe->AddHostRouteTo (iKKe.GetAddress (1), iGGe.GetAddress (1), rvector ({1},{1}));
-
-  staticRoutingHe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingHe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingHe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingHe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingHe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingHe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingHe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingHe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingHe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingHe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingHe->AddHostRouteTo (iAAe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
   staticRoutingHe->AddHostRouteTo (iBBe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
   staticRoutingHe->AddHostRouteTo (iCCe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
   staticRoutingHe->AddHostRouteTo (iDDe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
   staticRoutingHe->AddHostRouteTo (iEEe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
   staticRoutingHe->AddHostRouteTo (iFFe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
   staticRoutingHe->AddHostRouteTo (iGGe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingHe->AddHostRouteTo (iAAe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
   staticRoutingHe->AddHostRouteTo (iIIe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
   staticRoutingHe->AddHostRouteTo (iJJe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
   staticRoutingHe->AddHostRouteTo (iKKe.GetAddress (1), iHHe.GetAddress (1), rvector ({1},{1}));
-
-  staticRoutingIe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingIe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingIe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingIe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingIe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingIe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingIe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingIe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingIe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingIe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingIe->AddHostRouteTo (iAAe.GetAddress (1), iIIe.GetAddress (1), rvector ({1},{1}));
   staticRoutingIe->AddHostRouteTo (iBBe.GetAddress (1), iIIe.GetAddress (1), rvector ({1},{1}));
   staticRoutingIe->AddHostRouteTo (iCCe.GetAddress (1), iIIe.GetAddress (1), rvector ({1},{1}));
   staticRoutingIe->AddHostRouteTo (iDDe.GetAddress (1), iIIe.GetAddress (1), rvector ({1},{1}));
@@ -778,20 +797,9 @@ main (int argc, char *argv[])
   staticRoutingIe->AddHostRouteTo (iFFe.GetAddress (1), iIIe.GetAddress (1), rvector ({1},{1}));
   staticRoutingIe->AddHostRouteTo (iGGe.GetAddress (1), iIIe.GetAddress (1), rvector ({1},{1}));
   staticRoutingIe->AddHostRouteTo (iHHe.GetAddress (1), iIIe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingIe->AddHostRouteTo (iAAe.GetAddress (1), iIIe.GetAddress (1), rvector ({1},{1}));
   staticRoutingIe->AddHostRouteTo (iJJe.GetAddress (1), iIIe.GetAddress (1), rvector ({1},{1}));
   staticRoutingIe->AddHostRouteTo (iKKe.GetAddress (1), iIIe.GetAddress (1), rvector ({1},{1}));
-
-  staticRoutingJe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingJe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingJe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingJe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingJe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingJe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingJe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingJe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingJe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingJe->AddHostRouteTo (iKKe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingJe->AddHostRouteTo (iAAe.GetAddress (1), iJJe.GetAddress (1), rvector ({1},{1}));
   staticRoutingJe->AddHostRouteTo (iBBe.GetAddress (1), iJJe.GetAddress (1), rvector ({1},{1}));
   staticRoutingJe->AddHostRouteTo (iCCe.GetAddress (1), iJJe.GetAddress (1), rvector ({1},{1}));
   staticRoutingJe->AddHostRouteTo (iDDe.GetAddress (1), iJJe.GetAddress (1), rvector ({1},{1}));
@@ -800,19 +808,8 @@ main (int argc, char *argv[])
   staticRoutingJe->AddHostRouteTo (iGGe.GetAddress (1), iJJe.GetAddress (1), rvector ({1},{1}));
   staticRoutingJe->AddHostRouteTo (iHHe.GetAddress (1), iJJe.GetAddress (1), rvector ({1},{1}));
   staticRoutingJe->AddHostRouteTo (iIIe.GetAddress (1), iJJe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingJe->AddHostRouteTo (iAAe.GetAddress (1), iJJe.GetAddress (1), rvector ({1},{1}));
   staticRoutingJe->AddHostRouteTo (iKKe.GetAddress (1), iJJe.GetAddress (1), rvector ({1},{1}));
-
-  staticRoutingKe->AddHostRouteTo (iBBe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingKe->AddHostRouteTo (iCCe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingKe->AddHostRouteTo (iDDe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingKe->AddHostRouteTo (iEEe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingKe->AddHostRouteTo (iFFe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingKe->AddHostRouteTo (iGGe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingKe->AddHostRouteTo (iHHe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingKe->AddHostRouteTo (iIIe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingKe->AddHostRouteTo (iJJe.GetAddress (1), fromLocal, rvector ({1},{1}));
-  staticRoutingKe->AddHostRouteTo (iAAe.GetAddress (1), fromLocal, rvector ({1},{1}));
+  staticRoutingKe->AddHostRouteTo (iAAe.GetAddress (1), iKKe.GetAddress (1), rvector ({1},{1}));
   staticRoutingKe->AddHostRouteTo (iBBe.GetAddress (1), iKKe.GetAddress (1), rvector ({1},{1}));
   staticRoutingKe->AddHostRouteTo (iCCe.GetAddress (1), iKKe.GetAddress (1), rvector ({1},{1}));
   staticRoutingKe->AddHostRouteTo (iDDe.GetAddress (1), iKKe.GetAddress (1), rvector ({1},{1}));
@@ -822,14 +819,519 @@ main (int argc, char *argv[])
   staticRoutingKe->AddHostRouteTo (iHHe.GetAddress (1), iKKe.GetAddress (1), rvector ({1},{1}));
   staticRoutingKe->AddHostRouteTo (iIIe.GetAddress (1), iKKe.GetAddress (1), rvector ({1},{1}));
   staticRoutingKe->AddHostRouteTo (iJJe.GetAddress (1), iKKe.GetAddress (1), rvector ({1},{1}));
-  staticRoutingKe->AddHostRouteTo (iAAe.GetAddress (1), iKKe.GetAddress (1), rvector ({1},{1}));
-  
-  staticRoutingA->AddHostRouteTo (iBBe.GetAddress(1), iAAe.GetAddress(1), rvector({1},{1}));
-  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iAAe.GetAddress(1), rvector({4},{1}));
-  
-  staticRoutingB->AddHostRouteTo (iAAe.GetAddress(1), iBBe.GetAddress(1), rvector({1},{1}));
-  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1}));
-  
+
+  staticRoutingA->AddHostRouteTo (iBBe.GetAddress(1), iAAe.GetAddress(1), rvector({1},{1})); //A->B
+  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iAAe.GetAddress(1), rvector({4},{1})); //B->Be
+
+  staticRoutingA->AddHostRouteTo (iCCe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //A->C
+  staticRoutingC->AddHostRouteTo (iCCe.GetAddress(1), iAAe.GetAddress(1), rvector({4},{1})); //C->Ce
+
+  staticRoutingA->AddHostRouteTo (iDDe.GetAddress(1), iAAe.GetAddress(1), rvector({1},{1})); //A->B
+  staticRoutingB->AddHostRouteTo (iDDe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iDDe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //D->De
+
+  staticRoutingA->AddHostRouteTo (iEEe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //A->C
+  staticRoutingC->AddHostRouteTo (iEEe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iEEe.GetAddress(1), iAAe.GetAddress(1), rvector({4},{1})); //E->Ee
+
+  staticRoutingA->AddHostRouteTo (iFFe.GetAddress(1), iAAe.GetAddress(1), rvector({1},{1})); //A->B
+  staticRoutingB->AddHostRouteTo (iFFe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iFFe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iFFe.GetAddress(1), iAAe.GetAddress(1), rvector({4},{1})); //F->Fe
+
+  staticRoutingA->AddHostRouteTo (iGGe.GetAddress(1), iAAe.GetAddress(1), rvector({1},{1})); //A->B
+  staticRoutingB->AddHostRouteTo (iGGe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iGGe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iGGe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iGGe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iGGe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //J->K
+  staticRoutingK->AddHostRouteTo (iGGe.GetAddress(1), iAAe.GetAddress(1), rvector({1},{1})); //K->G
+  staticRoutingG->AddHostRouteTo (iGGe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //G->Ge
+
+  staticRoutingA->AddHostRouteTo (iHHe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //A->C
+  staticRoutingC->AddHostRouteTo (iHHe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iHHe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iHHe.GetAddress(1), iAAe.GetAddress(1), rvector({4},{1})); //H->He
+
+  staticRoutingA->AddHostRouteTo (iIIe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //A->C
+  staticRoutingC->AddHostRouteTo (iIIe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iIIe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iIIe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iIIe.GetAddress(1), iAAe.GetAddress(1), rvector({4},{1})); //I->Ie
+
+  staticRoutingA->AddHostRouteTo (iJJe.GetAddress(1), iAAe.GetAddress(1), rvector({1},{1})); //A->B
+  staticRoutingB->AddHostRouteTo (iJJe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iJJe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iJJe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iJJe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iJJe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //J->Je
+
+  staticRoutingA->AddHostRouteTo (iKKe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //A->C
+  staticRoutingC->AddHostRouteTo (iKKe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iKKe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iKKe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //H->G
+  staticRoutingG->AddHostRouteTo (iKKe.GetAddress(1), iAAe.GetAddress(1), rvector({2},{1})); //G->K
+  staticRoutingK->AddHostRouteTo (iKKe.GetAddress(1), iAAe.GetAddress(1), rvector({3},{1})); //K->Ke
+
+  staticRoutingB->AddHostRouteTo (iAAe.GetAddress(1), iBBe.GetAddress(1), rvector({1},{1})); //B->A
+  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //A->Ae
+
+  staticRoutingB->AddHostRouteTo (iCCe.GetAddress(1), iBBe.GetAddress(1), rvector({2},{1})); //B->C
+  staticRoutingC->AddHostRouteTo (iCCe.GetAddress(1), iBBe.GetAddress(1), rvector({4},{1})); //C->Ce
+
+  staticRoutingB->AddHostRouteTo (iDDe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iDDe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //D->De
+
+  staticRoutingB->AddHostRouteTo (iEEe.GetAddress(1), iBBe.GetAddress(1), rvector({2},{1})); //B->C
+  staticRoutingC->AddHostRouteTo (iEEe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iEEe.GetAddress(1), iBBe.GetAddress(1), rvector({4},{1})); //E->Ee
+
+  staticRoutingB->AddHostRouteTo (iFFe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iFFe.GetAddress(1), iBBe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iFFe.GetAddress(1), iBBe.GetAddress(1), rvector({4},{1})); //F->Fe
+
+  staticRoutingB->AddHostRouteTo (iGGe.GetAddress(1), iBBe.GetAddress(1), rvector({2},{1})); //B->C
+  staticRoutingC->AddHostRouteTo (iGGe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iGGe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iGGe.GetAddress(1), iBBe.GetAddress(1), rvector({2},{1})); //H->G
+  staticRoutingG->AddHostRouteTo (iGGe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //G->Ge
+
+  staticRoutingB->AddHostRouteTo (iHHe.GetAddress(1), iBBe.GetAddress(1), rvector({2},{1})); //B->C
+  staticRoutingC->AddHostRouteTo (iHHe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iHHe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iHHe.GetAddress(1), iBBe.GetAddress(1), rvector({4},{1})); //H->He
+
+  staticRoutingB->AddHostRouteTo (iIIe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iIIe.GetAddress(1), iBBe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iIIe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iIIe.GetAddress(1), iBBe.GetAddress(1), rvector({4},{1})); //I->Ie
+
+  staticRoutingB->AddHostRouteTo (iJJe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iJJe.GetAddress(1), iBBe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iJJe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iJJe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iJJe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //J->Je
+
+  staticRoutingB->AddHostRouteTo (iKKe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iKKe.GetAddress(1), iBBe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iKKe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iKKe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iKKe.GetAddress(1), iBBe.GetAddress(1), rvector({2},{1})); //J->K
+  staticRoutingK->AddHostRouteTo (iKKe.GetAddress(1), iBBe.GetAddress(1), rvector({3},{1})); //K->Ke
+
+  staticRoutingC->AddHostRouteTo (iAAe.GetAddress(1), iCCe.GetAddress(1), rvector({1},{1})); //C->A
+  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //A->Ae
+
+  staticRoutingC->AddHostRouteTo (iBBe.GetAddress(1), iCCe.GetAddress(1), rvector({2},{1})); //C->B
+  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iCCe.GetAddress(1), rvector({4},{1})); //B->Be
+
+  staticRoutingC->AddHostRouteTo (iDDe.GetAddress(1), iCCe.GetAddress(1), rvector({2},{1})); //C->B
+  staticRoutingB->AddHostRouteTo (iDDe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iDDe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //D->De
+
+  staticRoutingC->AddHostRouteTo (iEEe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iEEe.GetAddress(1), iCCe.GetAddress(1), rvector({4},{1})); //E->Ee
+
+  staticRoutingC->AddHostRouteTo (iFFe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iFFe.GetAddress(1), iCCe.GetAddress(1), rvector({2},{1})); //E->F
+  staticRoutingF->AddHostRouteTo (iFFe.GetAddress(1), iCCe.GetAddress(1), rvector({4},{1})); //F->Fe
+
+  staticRoutingC->AddHostRouteTo (iGGe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iGGe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iGGe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iGGe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iGGe.GetAddress(1), iCCe.GetAddress(1), rvector({2},{1})); //J->K
+  staticRoutingK->AddHostRouteTo (iGGe.GetAddress(1), iCCe.GetAddress(1), rvector({1},{1})); //K->G
+  staticRoutingG->AddHostRouteTo (iGGe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //G->Ge
+
+  staticRoutingC->AddHostRouteTo (iHHe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iHHe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iHHe.GetAddress(1), iCCe.GetAddress(1), rvector({4},{1})); //H->He
+
+  staticRoutingC->AddHostRouteTo (iIIe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iIIe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iIIe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iIIe.GetAddress(1), iCCe.GetAddress(1), rvector({4},{1})); //I->Ie
+
+  staticRoutingC->AddHostRouteTo (iJJe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iJJe.GetAddress(1), iCCe.GetAddress(1), rvector({2},{1})); //E->F
+  staticRoutingF->AddHostRouteTo (iJJe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iJJe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iJJe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //J->Je
+
+  staticRoutingC->AddHostRouteTo (iKKe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //C->E
+  staticRoutingE->AddHostRouteTo (iKKe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iKKe.GetAddress(1), iCCe.GetAddress(1), rvector({2},{1})); //H->G
+  staticRoutingG->AddHostRouteTo (iKKe.GetAddress(1), iCCe.GetAddress(1), rvector({2},{1})); //G->K
+  staticRoutingK->AddHostRouteTo (iKKe.GetAddress(1), iCCe.GetAddress(1), rvector({3},{1})); //K->Ke
+
+  staticRoutingD->AddHostRouteTo (iAAe.GetAddress(1), iDDe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iAAe.GetAddress(1), iDDe.GetAddress(1), rvector({1},{1})); //B->A
+  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //A->Ae
+
+  staticRoutingD->AddHostRouteTo (iBBe.GetAddress(1), iDDe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iDDe.GetAddress(1), rvector({4},{1})); //B->Be
+
+  staticRoutingD->AddHostRouteTo (iCCe.GetAddress(1), iDDe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iCCe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //B->C
+  staticRoutingC->AddHostRouteTo (iCCe.GetAddress(1), iDDe.GetAddress(1), rvector({4},{1})); //C->Ce
+
+  staticRoutingD->AddHostRouteTo (iEEe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iEEe.GetAddress(1), iDDe.GetAddress(1), rvector({1},{1})); //F->E
+  staticRoutingE->AddHostRouteTo (iEEe.GetAddress(1), iDDe.GetAddress(1), rvector({4},{1})); //E->Ee
+
+  staticRoutingD->AddHostRouteTo (iFFe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iFFe.GetAddress(1), iDDe.GetAddress(1), rvector({4},{1})); //F->Fe
+
+  staticRoutingD->AddHostRouteTo (iGGe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iGGe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iGGe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //I->H
+  staticRoutingH->AddHostRouteTo (iGGe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //H->G
+  staticRoutingG->AddHostRouteTo (iGGe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //G->Ge
+
+  staticRoutingD->AddHostRouteTo (iHHe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iHHe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iHHe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //I->H
+  staticRoutingH->AddHostRouteTo (iHHe.GetAddress(1), iDDe.GetAddress(1), rvector({4},{1})); //H->He
+
+  staticRoutingD->AddHostRouteTo (iIIe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iIIe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iIIe.GetAddress(1), iDDe.GetAddress(1), rvector({4},{1})); //I->Ie
+
+  staticRoutingD->AddHostRouteTo (iJJe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iJJe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iJJe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iJJe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //J->Je
+
+  staticRoutingD->AddHostRouteTo (iKKe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //D->F
+  staticRoutingF->AddHostRouteTo (iKKe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iKKe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iKKe.GetAddress(1), iDDe.GetAddress(1), rvector({2},{1})); //J->K
+  staticRoutingK->AddHostRouteTo (iKKe.GetAddress(1), iDDe.GetAddress(1), rvector({3},{1})); //K->Ke
+
+  staticRoutingE->AddHostRouteTo (iAAe.GetAddress(1), iEEe.GetAddress(1), rvector({2},{1})); //E->F
+  staticRoutingF->AddHostRouteTo (iAAe.GetAddress(1), iEEe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iAAe.GetAddress(1), iEEe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iAAe.GetAddress(1), iEEe.GetAddress(1), rvector({1},{1})); //B->A
+  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //A->Ae
+
+  staticRoutingE->AddHostRouteTo (iBBe.GetAddress(1), iEEe.GetAddress(1), rvector({2},{1})); //E->F
+  staticRoutingF->AddHostRouteTo (iBBe.GetAddress(1), iEEe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iBBe.GetAddress(1), iEEe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iEEe.GetAddress(1), rvector({4},{1})); //B->Be
+
+  staticRoutingE->AddHostRouteTo (iCCe.GetAddress(1), iEEe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iCCe.GetAddress(1), iEEe.GetAddress(1), rvector({4},{1})); //C->Ce
+
+  staticRoutingE->AddHostRouteTo (iDDe.GetAddress(1), iEEe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iDDe.GetAddress(1), iEEe.GetAddress(1), rvector({1},{1})); //C->A
+  staticRoutingA->AddHostRouteTo (iDDe.GetAddress(1), iEEe.GetAddress(1), rvector({1},{1})); //A->B
+  staticRoutingB->AddHostRouteTo (iDDe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iDDe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //D->De
+
+  staticRoutingE->AddHostRouteTo (iFFe.GetAddress(1), iEEe.GetAddress(1), rvector({2},{1})); //E->F
+  staticRoutingF->AddHostRouteTo (iFFe.GetAddress(1), iEEe.GetAddress(1), rvector({4},{1})); //F->Fe
+
+  staticRoutingE->AddHostRouteTo (iGGe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iGGe.GetAddress(1), iEEe.GetAddress(1), rvector({2},{1})); //H->G
+  staticRoutingG->AddHostRouteTo (iGGe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //G->Ge
+
+  staticRoutingE->AddHostRouteTo (iHHe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iHHe.GetAddress(1), iEEe.GetAddress(1), rvector({4},{1})); //H->He
+
+  staticRoutingE->AddHostRouteTo (iIIe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iIIe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iIIe.GetAddress(1), iEEe.GetAddress(1), rvector({4},{1})); //I->Ie
+
+  staticRoutingE->AddHostRouteTo (iJJe.GetAddress(1), iEEe.GetAddress(1), rvector({2},{1})); //E->F
+  staticRoutingF->AddHostRouteTo (iJJe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iJJe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iJJe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //J->Je
+
+  staticRoutingE->AddHostRouteTo (iKKe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iKKe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iKKe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iKKe.GetAddress(1), iEEe.GetAddress(1), rvector({2},{1})); //J->K
+  staticRoutingK->AddHostRouteTo (iKKe.GetAddress(1), iEEe.GetAddress(1), rvector({3},{1})); //K->Ke
+
+  staticRoutingF->AddHostRouteTo (iAAe.GetAddress(1), iFFe.GetAddress(1), rvector({1},{1})); //F->E
+  staticRoutingE->AddHostRouteTo (iAAe.GetAddress(1), iFFe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iAAe.GetAddress(1), iFFe.GetAddress(1), rvector({1},{1})); //C->A
+  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //A->Ae
+
+  staticRoutingF->AddHostRouteTo (iBBe.GetAddress(1), iFFe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iBBe.GetAddress(1), iFFe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iFFe.GetAddress(1), rvector({4},{1})); //B->Be
+
+  staticRoutingF->AddHostRouteTo (iCCe.GetAddress(1), iFFe.GetAddress(1), rvector({1},{1})); //F->E
+  staticRoutingE->AddHostRouteTo (iCCe.GetAddress(1), iFFe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iCCe.GetAddress(1), iFFe.GetAddress(1), rvector({4},{1})); //C->Ce
+
+  staticRoutingF->AddHostRouteTo (iDDe.GetAddress(1), iFFe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iDDe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //D->De
+
+  staticRoutingF->AddHostRouteTo (iEEe.GetAddress(1), iFFe.GetAddress(1), rvector({1},{1})); //F->E
+  staticRoutingE->AddHostRouteTo (iEEe.GetAddress(1), iFFe.GetAddress(1), rvector({4},{1})); //E->Ee
+
+  staticRoutingF->AddHostRouteTo (iGGe.GetAddress(1), iFFe.GetAddress(1), rvector({1},{1})); //F->E
+  staticRoutingE->AddHostRouteTo (iGGe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iGGe.GetAddress(1), iFFe.GetAddress(1), rvector({2},{1})); //H->G
+  staticRoutingG->AddHostRouteTo (iGGe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //G->Ge
+
+  staticRoutingF->AddHostRouteTo (iHHe.GetAddress(1), iFFe.GetAddress(1), rvector({1},{1})); //F->E
+  staticRoutingE->AddHostRouteTo (iHHe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //E->H
+  staticRoutingH->AddHostRouteTo (iHHe.GetAddress(1), iFFe.GetAddress(1), rvector({4},{1})); //H->He
+
+  staticRoutingF->AddHostRouteTo (iIIe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iIIe.GetAddress(1), iFFe.GetAddress(1), rvector({4},{1})); //I->Ie
+
+  staticRoutingF->AddHostRouteTo (iJJe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iJJe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iJJe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //J->Je
+
+  staticRoutingF->AddHostRouteTo (iKKe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //F->I
+  staticRoutingI->AddHostRouteTo (iKKe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iKKe.GetAddress(1), iFFe.GetAddress(1), rvector({2},{1})); //J->K
+  staticRoutingK->AddHostRouteTo (iKKe.GetAddress(1), iFFe.GetAddress(1), rvector({3},{1})); //K->Ke
+
+  staticRoutingG->AddHostRouteTo (iAAe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iAAe.GetAddress(1), iGGe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iAAe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iAAe.GetAddress(1), iGGe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iAAe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iAAe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //B->A
+  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iGGe.GetAddress(1), rvector({3},{1})); //A->Ae
+
+  staticRoutingG->AddHostRouteTo (iBBe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iBBe.GetAddress(1), iGGe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iBBe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iBBe.GetAddress(1), iGGe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iBBe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iGGe.GetAddress(1), rvector({4},{1})); //B->Be
+
+  staticRoutingG->AddHostRouteTo (iCCe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iCCe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iCCe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iCCe.GetAddress(1), iGGe.GetAddress(1), rvector({4},{1})); //C->Ce
+
+  staticRoutingG->AddHostRouteTo (iDDe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iDDe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iDDe.GetAddress(1), iGGe.GetAddress(1), rvector({2},{1})); //E->F
+  staticRoutingF->AddHostRouteTo (iDDe.GetAddress(1), iGGe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iDDe.GetAddress(1), iGGe.GetAddress(1), rvector({3},{1})); //D->De
+
+  staticRoutingG->AddHostRouteTo (iEEe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iEEe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iEEe.GetAddress(1), iGGe.GetAddress(1), rvector({4},{1})); //E->Ee
+
+  staticRoutingG->AddHostRouteTo (iFFe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iFFe.GetAddress(1), iGGe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iFFe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iFFe.GetAddress(1), iGGe.GetAddress(1), rvector({4},{1})); //F->Fe
+
+  staticRoutingG->AddHostRouteTo (iHHe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iHHe.GetAddress(1), iGGe.GetAddress(1), rvector({4},{1})); //H->He
+
+  staticRoutingG->AddHostRouteTo (iIIe.GetAddress(1), iGGe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iIIe.GetAddress(1), iGGe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iIIe.GetAddress(1), iGGe.GetAddress(1), rvector({4},{1})); //I->Ie
+
+  staticRoutingG->AddHostRouteTo (iJJe.GetAddress(1), iGGe.GetAddress(1), rvector({2},{1})); //G->K
+  staticRoutingK->AddHostRouteTo (iJJe.GetAddress(1), iGGe.GetAddress(1), rvector({2},{1})); //K->J
+  staticRoutingJ->AddHostRouteTo (iJJe.GetAddress(1), iGGe.GetAddress(1), rvector({3},{1})); //J->Je
+
+  staticRoutingG->AddHostRouteTo (iKKe.GetAddress(1), iGGe.GetAddress(1), rvector({2},{1})); //G->K
+  staticRoutingK->AddHostRouteTo (iKKe.GetAddress(1), iGGe.GetAddress(1), rvector({3},{1})); //K->Ke
+
+  staticRoutingH->AddHostRouteTo (iAAe.GetAddress(1), iHHe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iAAe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //E->F
+  staticRoutingF->AddHostRouteTo (iAAe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iAAe.GetAddress(1), iHHe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iAAe.GetAddress(1), iHHe.GetAddress(1), rvector({1},{1})); //B->A
+  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iHHe.GetAddress(1), rvector({3},{1})); //A->Ae
+
+  staticRoutingH->AddHostRouteTo (iBBe.GetAddress(1), iHHe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iBBe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //E->F
+  staticRoutingF->AddHostRouteTo (iBBe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iBBe.GetAddress(1), iHHe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iHHe.GetAddress(1), rvector({4},{1})); //B->Be
+
+  staticRoutingH->AddHostRouteTo (iCCe.GetAddress(1), iHHe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iCCe.GetAddress(1), iHHe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iCCe.GetAddress(1), iHHe.GetAddress(1), rvector({4},{1})); //C->Ce
+
+  staticRoutingH->AddHostRouteTo (iDDe.GetAddress(1), iHHe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iDDe.GetAddress(1), iHHe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iDDe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iDDe.GetAddress(1), iHHe.GetAddress(1), rvector({3},{1})); //D->De
+
+  staticRoutingH->AddHostRouteTo (iEEe.GetAddress(1), iHHe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iEEe.GetAddress(1), iHHe.GetAddress(1), rvector({4},{1})); //E->Ee
+
+  staticRoutingH->AddHostRouteTo (iFFe.GetAddress(1), iHHe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iFFe.GetAddress(1), iHHe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iFFe.GetAddress(1), iHHe.GetAddress(1), rvector({4},{1})); //F->Fe
+
+  staticRoutingH->AddHostRouteTo (iGGe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //H->G
+  staticRoutingG->AddHostRouteTo (iGGe.GetAddress(1), iHHe.GetAddress(1), rvector({3},{1})); //G->Ge
+
+  staticRoutingH->AddHostRouteTo (iIIe.GetAddress(1), iHHe.GetAddress(1), rvector({3},{1})); //H->I
+  staticRoutingI->AddHostRouteTo (iIIe.GetAddress(1), iHHe.GetAddress(1), rvector({4},{1})); //I->Ie
+
+  staticRoutingH->AddHostRouteTo (iJJe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //H->G
+  staticRoutingG->AddHostRouteTo (iJJe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //G->K
+  staticRoutingK->AddHostRouteTo (iJJe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //K->J
+  staticRoutingJ->AddHostRouteTo (iJJe.GetAddress(1), iHHe.GetAddress(1), rvector({3},{1})); //J->Je
+
+  staticRoutingH->AddHostRouteTo (iKKe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //H->G
+  staticRoutingG->AddHostRouteTo (iKKe.GetAddress(1), iHHe.GetAddress(1), rvector({2},{1})); //G->K
+  staticRoutingK->AddHostRouteTo (iKKe.GetAddress(1), iHHe.GetAddress(1), rvector({3},{1})); //K->Ke
+
+  staticRoutingI->AddHostRouteTo (iAAe.GetAddress(1), iIIe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iAAe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iAAe.GetAddress(1), iIIe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iAAe.GetAddress(1), iIIe.GetAddress(1), rvector({1},{1})); //B->A
+  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iIIe.GetAddress(1), rvector({3},{1})); //A->Ae
+
+  staticRoutingI->AddHostRouteTo (iBBe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //I->H
+  staticRoutingH->AddHostRouteTo (iBBe.GetAddress(1), iIIe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iBBe.GetAddress(1), iIIe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iBBe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //C->B
+  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iIIe.GetAddress(1), rvector({4},{1})); //B->Be
+
+  staticRoutingI->AddHostRouteTo (iCCe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //I->H
+  staticRoutingH->AddHostRouteTo (iCCe.GetAddress(1), iIIe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iCCe.GetAddress(1), iIIe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iCCe.GetAddress(1), iIIe.GetAddress(1), rvector({4},{1})); //C->Ce
+
+  staticRoutingI->AddHostRouteTo (iDDe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //I->H
+  staticRoutingH->AddHostRouteTo (iDDe.GetAddress(1), iIIe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iDDe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //E->F
+  staticRoutingF->AddHostRouteTo (iDDe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iDDe.GetAddress(1), iIIe.GetAddress(1), rvector({3},{1})); //D->De
+
+  staticRoutingI->AddHostRouteTo (iEEe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //I->H
+  staticRoutingH->AddHostRouteTo (iEEe.GetAddress(1), iIIe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iEEe.GetAddress(1), iIIe.GetAddress(1), rvector({4},{1})); //E->Ee
+
+  staticRoutingI->AddHostRouteTo (iFFe.GetAddress(1), iIIe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iFFe.GetAddress(1), iIIe.GetAddress(1), rvector({4},{1})); //F->Fe
+
+  staticRoutingI->AddHostRouteTo (iGGe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //I->H
+  staticRoutingH->AddHostRouteTo (iGGe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //H->G
+  staticRoutingG->AddHostRouteTo (iGGe.GetAddress(1), iIIe.GetAddress(1), rvector({3},{1})); //G->Ge
+
+  staticRoutingI->AddHostRouteTo (iHHe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //I->H
+  staticRoutingH->AddHostRouteTo (iHHe.GetAddress(1), iIIe.GetAddress(1), rvector({4},{1})); //H->He
+
+  staticRoutingI->AddHostRouteTo (iJJe.GetAddress(1), iIIe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iJJe.GetAddress(1), iIIe.GetAddress(1), rvector({3},{1})); //J->Je
+
+  staticRoutingI->AddHostRouteTo (iKKe.GetAddress(1), iIIe.GetAddress(1), rvector({3},{1})); //I->J
+  staticRoutingJ->AddHostRouteTo (iKKe.GetAddress(1), iIIe.GetAddress(1), rvector({2},{1})); //J->K
+  staticRoutingK->AddHostRouteTo (iKKe.GetAddress(1), iIIe.GetAddress(1), rvector({3},{1})); //K->Ke
+
+  staticRoutingJ->AddHostRouteTo (iAAe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iAAe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iAAe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //F->E
+  staticRoutingE->AddHostRouteTo (iAAe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iAAe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //C->A
+  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iJJe.GetAddress(1), rvector({3},{1})); //A->Ae
+
+  staticRoutingJ->AddHostRouteTo (iBBe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iBBe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iBBe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //F->E
+  staticRoutingE->AddHostRouteTo (iBBe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iBBe.GetAddress(1), iJJe.GetAddress(1), rvector({2},{1})); //C->B
+  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iJJe.GetAddress(1), rvector({4},{1})); //B->Be
+
+  staticRoutingJ->AddHostRouteTo (iCCe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iCCe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iCCe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //F->E
+  staticRoutingE->AddHostRouteTo (iCCe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iCCe.GetAddress(1), iJJe.GetAddress(1), rvector({4},{1})); //C->Ce
+
+  staticRoutingJ->AddHostRouteTo (iDDe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iDDe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iDDe.GetAddress(1), iJJe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iDDe.GetAddress(1), iJJe.GetAddress(1), rvector({3},{1})); //D->De
+
+  staticRoutingJ->AddHostRouteTo (iEEe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iEEe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iEEe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //F->E
+  staticRoutingE->AddHostRouteTo (iEEe.GetAddress(1), iJJe.GetAddress(1), rvector({4},{1})); //E->Ee
+
+  staticRoutingJ->AddHostRouteTo (iFFe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iFFe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iFFe.GetAddress(1), iJJe.GetAddress(1), rvector({4},{1})); //F->Fe
+
+  staticRoutingJ->AddHostRouteTo (iGGe.GetAddress(1), iJJe.GetAddress(1), rvector({2},{1})); //J->K
+  staticRoutingK->AddHostRouteTo (iGGe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //K->G
+  staticRoutingG->AddHostRouteTo (iGGe.GetAddress(1), iJJe.GetAddress(1), rvector({3},{1})); //G->Ge
+
+  staticRoutingJ->AddHostRouteTo (iHHe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iHHe.GetAddress(1), iJJe.GetAddress(1), rvector({2},{1})); //I->H
+  staticRoutingH->AddHostRouteTo (iHHe.GetAddress(1), iJJe.GetAddress(1), rvector({4},{1})); //H->He
+
+  staticRoutingJ->AddHostRouteTo (iIIe.GetAddress(1), iJJe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iIIe.GetAddress(1), iJJe.GetAddress(1), rvector({4},{1})); //I->Ie
+
+  staticRoutingJ->AddHostRouteTo (iKKe.GetAddress(1), iJJe.GetAddress(1), rvector({2},{1})); //J->K
+  staticRoutingK->AddHostRouteTo (iKKe.GetAddress(1), iJJe.GetAddress(1), rvector({3},{1})); //K->Ke
+
+  staticRoutingK->AddHostRouteTo (iAAe.GetAddress(1), iKKe.GetAddress(1), rvector({2},{1})); //K->J
+  staticRoutingJ->AddHostRouteTo (iAAe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iAAe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iAAe.GetAddress(1), iKKe.GetAddress(1), rvector({2},{1})); //F->D
+  staticRoutingD->AddHostRouteTo (iAAe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //D->B
+  staticRoutingB->AddHostRouteTo (iAAe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //B->A
+  staticRoutingA->AddHostRouteTo (iAAe.GetAddress(1), iKKe.GetAddress(1), rvector({3},{1})); //A->Ae
+
+  staticRoutingK->AddHostRouteTo (iBBe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //K->G
+  staticRoutingG->AddHostRouteTo (iBBe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iBBe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iBBe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iBBe.GetAddress(1), iKKe.GetAddress(1), rvector({2},{1})); //C->B
+  staticRoutingB->AddHostRouteTo (iBBe.GetAddress(1), iKKe.GetAddress(1), rvector({4},{1})); //B->Be
+
+  staticRoutingK->AddHostRouteTo (iCCe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //K->G
+  staticRoutingG->AddHostRouteTo (iCCe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iCCe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iCCe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iCCe.GetAddress(1), iKKe.GetAddress(1), rvector({4},{1})); //C->Ce
+
+  staticRoutingK->AddHostRouteTo (iDDe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //K->G
+  staticRoutingG->AddHostRouteTo (iDDe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iDDe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iDDe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //E->C
+  staticRoutingC->AddHostRouteTo (iDDe.GetAddress(1), iKKe.GetAddress(1), rvector({2},{1})); //C->B
+  staticRoutingB->AddHostRouteTo (iDDe.GetAddress(1), iKKe.GetAddress(1), rvector({3},{1})); //B->D
+  staticRoutingD->AddHostRouteTo (iDDe.GetAddress(1), iKKe.GetAddress(1), rvector({3},{1})); //D->De
+
+  staticRoutingK->AddHostRouteTo (iEEe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //K->G
+  staticRoutingG->AddHostRouteTo (iEEe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iEEe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //H->E
+  staticRoutingE->AddHostRouteTo (iEEe.GetAddress(1), iKKe.GetAddress(1), rvector({4},{1})); //E->Ee
+
+  staticRoutingK->AddHostRouteTo (iFFe.GetAddress(1), iKKe.GetAddress(1), rvector({2},{1})); //K->J
+  staticRoutingJ->AddHostRouteTo (iFFe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iFFe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //I->F
+  staticRoutingF->AddHostRouteTo (iFFe.GetAddress(1), iKKe.GetAddress(1), rvector({4},{1})); //F->Fe
+
+  staticRoutingK->AddHostRouteTo (iGGe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //K->G
+  staticRoutingG->AddHostRouteTo (iGGe.GetAddress(1), iKKe.GetAddress(1), rvector({3},{1})); //G->Ge
+
+  staticRoutingK->AddHostRouteTo (iHHe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //K->G
+  staticRoutingG->AddHostRouteTo (iHHe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //G->H
+  staticRoutingH->AddHostRouteTo (iHHe.GetAddress(1), iKKe.GetAddress(1), rvector({4},{1})); //H->He
+
+  staticRoutingK->AddHostRouteTo (iIIe.GetAddress(1), iKKe.GetAddress(1), rvector({2},{1})); //K->J
+  staticRoutingJ->AddHostRouteTo (iIIe.GetAddress(1), iKKe.GetAddress(1), rvector({1},{1})); //J->I
+  staticRoutingI->AddHostRouteTo (iIIe.GetAddress(1), iKKe.GetAddress(1), rvector({4},{1})); //I->Ie
+
+  staticRoutingK->AddHostRouteTo (iJJe.GetAddress(1), iKKe.GetAddress(1), rvector({2},{1})); //K->J
+  staticRoutingJ->AddHostRouteTo (iJJe.GetAddress(1), iKKe.GetAddress(1), rvector({3},{1})); //J->Je
+
 
 /////////////////////////////////////
 
@@ -837,12 +1339,12 @@ main (int argc, char *argv[])
 
     std::array<ApplicationContainer, 11*100> sinkApps;
     for(int i = 0; i <= 10; i++){
-      for (int j = 1; j <= 100; j++)
+      for (int j = 1; j <= 10; j++)
       {
         PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), j));
-        sinkApps[i*100+j-1] = packetSinkHelper.Install (c_e.Get (i));
-        sinkApps[i*100+j-1].Start (Seconds (0.));
-        sinkApps[i*100+j-1].Stop (Seconds (END_TIME));
+        sinkApps[i*10+j-1] = packetSinkHelper.Install (c_e.Get (i));
+        sinkApps[i*10+j-1].Start (Seconds (0.));
+        sinkApps[i*10+j-1].Stop (Seconds (END_TIME));
       }
     }
   // Setup sink App end
@@ -855,19 +1357,19 @@ main (int argc, char *argv[])
       {
         if (j != i)
         {
-          for (int k = 1; k <= 100; k++)
+          for (int k = 1; k <= 10; k++)
           {
             Ptr<MyApp> app = CreateObject<MyApp> ();
             Ptr<Node> node = c_e.Get (i);
             Address sinkAddress = InetSocketAddress (sinkAddresses[j], k);
-            if (i == 4 && j == 5)
+            if (i == 44 && j == 5)
             {
-              app->Setup (tid, node ,sinkAddress, PACKET_SIZE, 300000, DataRate ("0.28Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j)+"p"+std::to_string(k));
+              app->Setup (tid, node ,sinkAddress, PACKET_SIZE, 300000, DataRate ("2.8Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j)+"-p"+std::to_string(k));
             } else {
-              app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE), "n" + std::to_string(i) + "-n" + std::to_string(j)+"p"+std::to_string(k));
+              app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE), "n" + std::to_string(i) + "-n" + std::to_string(j)+"-p"+std::to_string(k));
             }
             node->AddApplication (app);
-            app->SetStartTime (Seconds (k/100));
+            app->SetStartTime (Seconds (0));
             app->SetStopTime (Seconds (END_TIME));
           }
         }
@@ -887,34 +1389,34 @@ main (int argc, char *argv[])
   // Trace settings
 
   // Animation settings
-    AnimationInterface::SetConstantPosition (c.Get (0),2.0,2.0);
-    AnimationInterface::SetConstantPosition (c.Get (1),2.0,4.0);
-    AnimationInterface::SetConstantPosition (c.Get (2),4.0,4.0);
-    AnimationInterface::SetConstantPosition (c.Get (3),3.0,6.0);
-    AnimationInterface::SetConstantPosition (c.Get (4),6.0,4.0);
-    AnimationInterface::SetConstantPosition (c.Get (5),6.0,6.0);
-    AnimationInterface::SetConstantPosition (c.Get (6),8.0,3.0);
-    AnimationInterface::SetConstantPosition (c.Get (7),8.0,4.0);
-    AnimationInterface::SetConstantPosition (c.Get (8),8.0,6.0);
-    AnimationInterface::SetConstantPosition (c.Get (9),9.0,5.0);
-    AnimationInterface::SetConstantPosition (c.Get (10),10.0,4.0);
+    // AnimationInterface::SetConstantPosition (c.Get (0),2.0,2.0);
+    // AnimationInterface::SetConstantPosition (c.Get (1),2.0,4.0);
+    // AnimationInterface::SetConstantPosition (c.Get (2),4.0,4.0);
+    // AnimationInterface::SetConstantPosition (c.Get (3),3.0,6.0);
+    // AnimationInterface::SetConstantPosition (c.Get (4),6.0,4.0);
+    // AnimationInterface::SetConstantPosition (c.Get (5),6.0,6.0);
+    // AnimationInterface::SetConstantPosition (c.Get (6),8.0,3.0);
+    // AnimationInterface::SetConstantPosition (c.Get (7),8.0,4.0);
+    // AnimationInterface::SetConstantPosition (c.Get (8),8.0,6.0);
+    // AnimationInterface::SetConstantPosition (c.Get (9),9.0,5.0);
+    // AnimationInterface::SetConstantPosition (c.Get (10),10.0,4.0);
 
-    AnimationInterface::SetConstantPosition (c_e.Get (0),1.5,2.0);
-    AnimationInterface::SetConstantPosition (c_e.Get (1),1.5,4.0);
-    AnimationInterface::SetConstantPosition (c_e.Get (2),4.0,4.5);
-    AnimationInterface::SetConstantPosition (c_e.Get (3),3.0,6.5);
-    AnimationInterface::SetConstantPosition (c_e.Get (4),6.0,3.5);
-    AnimationInterface::SetConstantPosition (c_e.Get (5),6.0,6.5);
-    AnimationInterface::SetConstantPosition (c_e.Get (6),8.0,2.5);
-    AnimationInterface::SetConstantPosition (c_e.Get (7),8.5,4.0);
-    AnimationInterface::SetConstantPosition (c_e.Get (8),8.0,6.5);
-    AnimationInterface::SetConstantPosition (c_e.Get (9),9.5,5.5);
-    AnimationInterface::SetConstantPosition (c_e.Get (10),10.5,4.0);
-    AnimationInterface anim ("./Data/static-route-default.xml");
+    // AnimationInterface::SetConstantPosition (c_e.Get (0),1.5,2.0);
+    // AnimationInterface::SetConstantPosition (c_e.Get (1),1.5,4.0);
+    // AnimationInterface::SetConstantPosition (c_e.Get (2),4.0,4.5);
+    // AnimationInterface::SetConstantPosition (c_e.Get (3),3.0,6.5);
+    // AnimationInterface::SetConstantPosition (c_e.Get (4),6.0,3.5);
+    // AnimationInterface::SetConstantPosition (c_e.Get (5),6.0,6.5);
+    // AnimationInterface::SetConstantPosition (c_e.Get (6),8.0,2.5);
+    // AnimationInterface::SetConstantPosition (c_e.Get (7),8.5,4.0);
+    // AnimationInterface::SetConstantPosition (c_e.Get (8),8.0,6.5);
+    // AnimationInterface::SetConstantPosition (c_e.Get (9),9.5,5.5);
+    // AnimationInterface::SetConstantPosition (c_e.Get (10),10.5,4.0);
+    // AnimationInterface anim ("./Data/static-route-port.xml");
   //Animation settings end
 
   Simulator::Stop (Seconds (END_TIME));
   Simulator::Run ();
   Simulator::Destroy ();
-  return 0;
+  return 0; 
 }
