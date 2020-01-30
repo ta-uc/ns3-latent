@@ -1340,7 +1340,7 @@ main (int argc, char *argv[])
             Address sinkAddress = InetSocketAddress (sinkAddresses[j], k);
             if (i == 4 && j == 5)
             {
-              app->Setup (tid, node ,sinkAddress, PACKET_SIZE, 300000, DataRate ("6Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j)+"-p"+std::to_string(k));
+              app->Setup (tid, node ,sinkAddress, PACKET_SIZE, 300000, DataRate ("2.5Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j)+"-p"+std::to_string(k));
             } else {
               app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE), "n" + std::to_string(i) + "-n" + std::to_string(j)+"-p"+std::to_string(k));
             }
