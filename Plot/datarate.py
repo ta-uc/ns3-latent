@@ -17,10 +17,10 @@ for nodeA in nodes:
             if int(l[:2]) >= 20:
               l_t = l.split(" ")
               thrsum += float(l_t[1].replace("\n",""))
-        if nodeA+nodeB in through_act.keys():
-          through_act[nodeA+nodeB] += thrsum/20/1000000
-        else:
-          through_act[nodeA+nodeB] =  thrsum/20/1000000
+      if nodeA+nodeB in through_act.keys():
+        through_act[nodeA+nodeB] += thrsum/21/100000
+      else:
+        through_act[nodeA+nodeB] =  thrsum/21/100000
  
 
 for nodeA in nodes:

@@ -236,7 +236,7 @@ MyApp::CountTCPTx (const Ptr<const Packet> packet, const TcpHeader &header, cons
   {
     ++m_tcpsent;
     ++m_tcpsentCount;
-    m_tcpsentSize += packet->GetSize () * 8;
+    m_tcpsentSize += packet->GetSize () * 8;//bits
   }
 }
 
