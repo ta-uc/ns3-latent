@@ -1362,7 +1362,7 @@ main (int argc, char *argv[])
             Ptr<MyApp> app = CreateObject<MyApp> ();
             Ptr<Node> node = c_e.Get (i);
             Address sinkAddress = InetSocketAddress (sinkAddresses[j], k);
-            if (i == 4 && j == 5)
+            if (i == 0 && j == 10)
             {
               app->Setup (tid, node ,sinkAddress, PACKET_SIZE, 300000, DataRate ("2.5Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j)+"-p"+std::to_string(k));
             } else {
