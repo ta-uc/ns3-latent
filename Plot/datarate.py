@@ -34,15 +34,16 @@ for nodeA in nodes:
             if int(l[:2]) >= 20:
               l_t = l.split(" ")
               losssum += float(l_t[1].replace("\n",""))
-          if nodeA+nodeB in loss.keys():
-            loss[nodeA+nodeB] += losssum/200
-          else:
-            loss[nodeA+nodeB] = losssum/200
+              
+      if nodeA+nodeB in loss.keys():
+        loss[nodeA+nodeB] += losssum/210
+      else:
+        loss[nodeA+nodeB] = losssum/210
           
 for nodeA in nodes:
   for nodeB in nodes:
     if nodeA != nodeB:
-      through_lat[nodeA+nodeB] = (1 / math.exp(-13.1 * loss[nodeA+nodeB]/10)) * through_act[nodeA+nodeB]
+      through_lat[nodeA+nodeB] = (1 / math.exp(-13.1 * loss[nodeA+nodeB])) * through_act[nodeA+nodeB]
 
 print(through_act)
 print(through_lat)
