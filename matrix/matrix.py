@@ -63,5 +63,5 @@ link_loss_rate = np.divide(link_loss, link_no_loss, out=np.zeros_like(
 
 i = 1
 print("linktraffic\n", link_traf[:, i])
-print("linktraffic*1.2(rounded)\n", np.round(link_traf[:, i]*1.2,0))
+# print("linktraffic*1.2(rounded)\n", np.round(link_traf[:, i]*1.2,0))
 print("linklossrate\n", link_loss_rate[:, i])
