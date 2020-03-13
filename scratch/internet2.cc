@@ -18,10 +18,10 @@
 
 #define PACKET_SIZE 1300 //bytes 分割・統合されないサイズにする
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
-#define ONE_DATUM 100 //パケットで1データ
+#define ONE_DATUM 1000 //パケットで1データ
 #define DEFAULT_SEND_RATE "5Mbps"
-#define NUM_PACKETS 40000
-#define END_TIME 43 //Seconds
+#define NUM_PACKETS 50000000
+#define END_TIME 40.1 //Seconds
 #define INTERVAL 20 //Seconds
 // #define TXQUEUE "5p" //先にうまる
 // #define TCQUEUE "5p" //TXが埋まると使われる
@@ -44,7 +44,7 @@ class MyApp : public Application
   public:
     MyApp ();
     virtual ~MyApp();
-    void Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate, std::string name);
+    void Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, uint64_t nPackets, DataRate dataRate, std::string name);
     void ChangeDataRate(double);
     void DetectPacketLoss (const uint32_t, const uint32_t);
     void CountTCPTx (const Ptr<const Packet> packet, const TcpHeader &header, const Ptr<const TcpSocketBase> socket);
@@ -103,7 +103,7 @@ MyApp::~MyApp()
 }
 
 void
-MyApp::Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate, std::string name)
+MyApp::Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, uint64_t nPackets, DataRate dataRate, std::string name)
 {
   m_tid = tid;
   m_node = node;
@@ -116,9 +116,9 @@ MyApp::Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, u
   m_targetRate = dataRate.GetBitRate ();
 
   AsciiTraceHelper ascii;
-  // m_cwndStream = ascii.CreateFileStream ("./Data/"+m_name+".cwnd");
-  m_datarateStream = ascii.CreateFileStream ("./Data/"+m_name+".drate");
-  m_lossStream = ascii.CreateFileStream ("./Data/"+m_name+".loss");
+  m_cwndStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".cwnd");
+  m_datarateStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".drate");
+  m_lossStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".loss");
 }
 
 void
@@ -174,10 +174,15 @@ MyApp::SendPacket (void)
   if(++m_packetsSent % ONE_DATUM == 0)   // １データ送信でコネクション終了
   {
     StopApplication ();
-    double lossRate = m_packetLoss / (double) m_tcpsent;
+    double lossRate = 0;
+    if (m_packetLoss !=0 && m_tcpsent != 0)
+    {
+      lossRate = m_packetLoss / (double) m_tcpsent;
+    }
+  
     ChangeDataRate (lossRate);
-    // *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
-    // *m_lossStream->GetStream () << Simulator::Now ().GetSeconds () << " " << lossRate << std::endl;
+    *m_datarateStream->GetStream () << Simulator::Now ().GetSeconds () << " " << m_dataRate.GetBitRate () << std::endl;
+    *m_lossStream->GetStream () << Simulator::Now ().GetSeconds () << " " << lossRate << std::endl;
     if (m_packetsSent < m_nPackets)
     {
         Simulator::ScheduleNow (&MyApp::ReConnect,this);
@@ -209,7 +214,7 @@ MyApp::ChangeDataRate (double lossRate)
 void
 MyApp::DetectPacketLoss (const uint32_t org, const uint32_t cgd)
 {
-  // *m_cwndStream->GetStream () << Simulator::Now ().GetSeconds () << " " << cgd << std::endl;
+  *m_cwndStream->GetStream () << Simulator::Now ().GetSeconds () << " " << cgd << std::endl;
   if(org > cgd) //cwnd 減少
   {
     ++m_packetLoss;
@@ -270,7 +275,14 @@ main (int argc, char *argv[])
 {
   CommandLine cmd;
   bool enableFlowMonitor = false;
+  int originNode = 0;
+  int destinationNode = 10;
+  std::string fileName = "./matrix/capas_default";
+
   cmd.AddValue ("EnableMonitor", "Enable Flow Monitor", enableFlowMonitor);
+  cmd.AddValue ("OrigNode", "Origin node increase flow", originNode);
+  cmd.AddValue ("DestNode", "Destination node increase flow", destinationNode);
+  cmd.AddValue ("FileName", "Filename for capacity settings", fileName);
   cmd.Parse (argc, argv);
 
   // Set default tcp type
@@ -324,124 +336,82 @@ main (int argc, char *argv[])
     NetDeviceContainer d9d10 = p2p.Install (n9n10);
   // Create p2p devices end
 
-  // Set data rate n0->n1
-  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n0->n3
-  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n1->n0
-  Config::Set("/NodeList/1/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n1->n2
-  Config::Set("/NodeList/1/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n1->n3
-  Config::Set("/NodeList/1/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n2->n1
-  Config::Set("/NodeList/2/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n2->n5
-  Config::Set("/NodeList/2/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n3->n0
-  Config::Set("/NodeList/3/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n3->n1
-  Config::Set("/NodeList/3/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n3->n4
-  Config::Set("/NodeList/3/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n4->n3
-  Config::Set("/NodeList/4/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n4->n6
-  Config::Set("/NodeList/4/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n4->n5
-  Config::Set("/NodeList/4/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n5->n2
-  Config::Set("/NodeList/5/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n5->n8
-  Config::Set("/NodeList/5/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n5->n4
-  Config::Set("/NodeList/5/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n6->n4
-  Config::Set("/NodeList/6/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n6->n8
-  Config::Set("/NodeList/6/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n6->n7
-  Config::Set("/NodeList/6/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n7->n6
-  Config::Set("/NodeList/7/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n7->n10
-  Config::Set("/NodeList/7/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n8->n5
-  Config::Set("/NodeList/8/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n8->n6
-  Config::Set("/NodeList/8/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n8->n9
-  Config::Set("/NodeList/8/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n9->n8
-  Config::Set("/NodeList/9/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n9->n10
-  Config::Set("/NodeList/9/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n10->n7
-  Config::Set("/NodeList/10/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  // Set data rate n10->n9
-  Config::Set("/NodeList/10/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("200Mbps")));
-  
-  // // Set data rate n0->n1
-  // Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
-  // // Set data rate n0->n3
-  // Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
-  // // Set data rate n1->n0
-  // Config::Set("/NodeList/1/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
-  // // Set data rate n1->n2
-  // Config::Set("/NodeList/1/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("60Mbps")));
-  // // Set data rate n1->n3
-  // Config::Set("/NodeList/1/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
-  // // Set data rate n2->n1
-  // Config::Set("/NodeList/2/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("54Mbps")));
-  // // Set data rate n2->n5
-  // Config::Set("/NodeList/2/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("84Mbps")));
-  // // Set data rate n3->n0
-  // Config::Set("/NodeList/3/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
-  // // Set data rate n3->n1
-  // Config::Set("/NodeList/3/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("36Mbps")));
-  // // Set data rate n3->n4
-  // Config::Set("/NodeList/3/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("84Mbps")));
-  // // Set data rate n4->n3
-  // Config::Set("/NodeList/4/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("90Mbps")));
-  // // Set data rate n4->n6
-  // Config::Set("/NodeList/4/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("90Mbps")));
-  // // Set data rate n4->n5
-  // Config::Set("/NodeList/4/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("42Mbps")));
-  // // Set data rate n5->n2
-  // Config::Set("/NodeList/5/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("78Mbps")));
-  // // Set data rate n5->n8
-  // Config::Set("/NodeList/5/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("90Mbps")));
-  // // Set data rate n5->n4
-  // Config::Set("/NodeList/5/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("42Mbps")));
-  // // Set data rate n6->n4
-  // Config::Set("/NodeList/6/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("96Mbps")));
-  // // Set data rate n6->n8
-  // Config::Set("/NodeList/6/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("42Mbps")));
-  // // Set data rate n6->n7
-  // Config::Set("/NodeList/6/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("72Mbps")));
-  // // Set data rate n7->n6
-  // Config::Set("/NodeList/7/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("78Mbps")));
-  // // Set data rate n7->n10
-  // Config::Set("/NodeList/7/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("36Mbps")));
-  // // Set data rate n8->n5
-  // Config::Set("/NodeList/8/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("84Mbps")));
-  // // Set data rate n8->n6
-  // Config::Set("/NodeList/8/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("42Mbps")));
-  // // Set data rate n8->n9
-  // Config::Set("/NodeList/8/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("72Mbps")));
-  // // Set data rate n9->n8
-  // Config::Set("/NodeList/9/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("66Mbps")));
-  // // Set data rate n9->n10
-  // Config::Set("/NodeList/9/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("36Mbps")));
-  // // Set data rate n10->n7
-  // Config::Set("/NodeList/10/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("42Mbps")));
-  // // Set data rate n10->n9
-  // Config::Set("/NodeList/10/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate("30Mbps")));
+  std::array<std::string, 28> capas;
 
+  std::ifstream ifs(fileName);
+  if (ifs.fail()) {
+        std::cerr << "Failed to open file." << std::endl;
+        return -1;
+  }
+
+  for (int i = 0; i < 28; i++)
+  {
+    getline(ifs, capas[i]);
+  }
+
+// set link capas
+  // Set data rate n0->n1
+  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[0])));
+  // Set data rate n0->n3
+  Config::Set("/NodeList/0/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[1])));
+  // Set data rate n1->n0
+  Config::Set("/NodeList/1/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[2])));
+  // Set data rate n1->n2
+  Config::Set("/NodeList/1/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[3])));
+  // Set data rate n1->n3
+  Config::Set("/NodeList/1/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[4])));
+  // Set data rate n2->n1
+  Config::Set("/NodeList/2/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[5])));
+  // Set data rate n2->n5
+  Config::Set("/NodeList/2/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[6])));
+  // Set data rate n3->n0
+  Config::Set("/NodeList/3/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[7])));
+  // Set data rate n3->n1
+  Config::Set("/NodeList/3/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[8])));
+  // Set data rate n3->n4
+  Config::Set("/NodeList/3/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[9])));
+  // Set data rate n4->n3
+  Config::Set("/NodeList/4/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[10])));
+  // Set data rate n4->n6
+  Config::Set("/NodeList/4/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[11])));
+  // Set data rate n4->n5
+  Config::Set("/NodeList/4/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[12])));
+  // Set data rate n5->n2
+  Config::Set("/NodeList/5/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[13])));
+  // Set data rate n5->n8
+  Config::Set("/NodeList/5/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[14])));
+  // Set data rate n5->n4
+  Config::Set("/NodeList/5/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[15])));
+  // Set data rate n6->n4
+  Config::Set("/NodeList/6/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[16])));
+  // Set data rate n6->n8
+  Config::Set("/NodeList/6/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[17])));
+  // Set data rate n6->n7
+  Config::Set("/NodeList/6/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[18])));
+  // Set data rate n7->n6
+  Config::Set("/NodeList/7/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[19])));
+  // Set data rate n7->n10
+  Config::Set("/NodeList/7/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[20])));
+  // Set data rate n8->n5
+  Config::Set("/NodeList/8/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[21])));
+  // Set data rate n8->n6
+  Config::Set("/NodeList/8/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[22])));
+  // Set data rate n8->n9
+  Config::Set("/NodeList/8/$ns3::Node/DeviceList/3/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[23])));
+  // Set data rate n9->n8
+  Config::Set("/NodeList/9/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[24])));
+  // Set data rate n9->n10
+  Config::Set("/NodeList/9/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[25])));
+  // Set data rate n10->n7
+  Config::Set("/NodeList/10/$ns3::Node/DeviceList/1/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[26])));
+  // Set data rate n10->n9
+  Config::Set("/NodeList/10/$ns3::Node/DeviceList/2/$ns3::PointToPointNetDevice/DataRate", DataRateValue (DataRate(capas[27])));
+//
 
   // Setup traffic control queue
     TrafficControlHelper tch_lim, tch;
-    tch.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
+    // tch.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
+    tch.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("100p"));
     tch.Install (d0d1);
     tch.Install (d0d3);
     tch.Install (d1d2);
@@ -519,7 +489,7 @@ main (int argc, char *argv[])
   // Link flow monitor reg end
 
 
-  // Packet loss monitor reg
+  // Link Packet loss monitor reg
 
     //n0->n1 1
     Config::ConnectWithoutContext ("/NodeList/0/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 1));
@@ -577,7 +547,7 @@ main (int argc, char *argv[])
     Config::ConnectWithoutContext ("/NodeList/10/$ns3::TrafficControlLayer/RootQueueDiscList/1/Drop", MakeBoundCallback (&linkPktLossCount, 27));
     //n10->n9 28
     Config::ConnectWithoutContext ("/NodeList/10/$ns3::TrafficControlLayer/RootQueueDiscList/2/Drop", MakeBoundCallback (&linkPktLossCount, 28));
-  // Packet loss monitor reg end
+  // Link Packet loss monitor reg end
 
 
   // Assign ip address
@@ -644,8 +614,8 @@ main (int argc, char *argv[])
             Ptr<MyApp> app = CreateObject<MyApp> ();
             Ptr<Node> node = c.Get (i);
             Address sinkAddress = addresses[j];
-            if (i == 9 && j == 2){
-              app->Setup (tid, node ,sinkAddress, PACKET_SIZE, 20000000, DataRate ("5Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j));
+            if (i == originNode && j == destinationNode){
+              app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate ("50Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j));
             }else{
               app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE), "n" + std::to_string(i) + "-n" + std::to_string(j));
             }
@@ -667,7 +637,7 @@ main (int argc, char *argv[])
 
   Simulator::Schedule(Time (Seconds (INTERVAL)), &monitorLink, INTERVAL);
   *streamLinkTrafSize->GetStream ()<< INTERVAL <<"\n\n";
-  *streamLinkTrafSize->GetStream ()<< END_TIME / INTERVAL <<"\n\n";
+  *streamLinkTrafSize->GetStream ()<< int(END_TIME / INTERVAL) <<"\n\n";
 
   // Flow Monitor
   FlowMonitorHelper flowmonHelper;

@@ -3,6 +3,7 @@ import math
 import sys
 import os
 np.set_printoptions(threshold=sys.maxsize)
+np.set_printoptions(suppress=True)
 route = np.array([[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 [1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -192,7 +193,7 @@ for c in range(col):
             1 / math.exp(-13.1 * od_loss_rate[:, c][i])) * od_flow[:, c][i]
     link_latent[:, c] = np.dot(route, od_latent[:, c])
 
-i = 0
+i = 1
 # print("odflow\n", od_flow[:, i])
 # print("odlatent\n", od_latent[:, i])
 print("odloss\n", od_loss_rate[:, i])

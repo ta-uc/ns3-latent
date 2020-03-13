@@ -1,4 +1,4 @@
-set xrange [0:15]
+set xrange [0:20]
 #set yrange [0:0.3]
 set key right
 set grid
