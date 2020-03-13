@@ -9,6 +9,6 @@ set output './pathloss.png'
 set xlabel 'time'
 set ylabel 'loss'
 
-plot "./Data/n9-n2.loss" using 1:2 \
+plot "./Data/n0-n10.loss" using 1:2 \
      with linespoints pt 1 ps 0.9 t "n0-n2"
-pause -1
+

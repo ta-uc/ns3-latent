@@ -2,6 +2,8 @@ import numpy as np
 import math
 import sys
 import os
+
+
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(suppress=True)
 route = np.array([[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -189,21 +191,30 @@ for c in range(col):
     od_loss_rate_log[:, c] = np.dot(route.T, link_loss_rate_log[:, c])
     od_loss_rate[:, c] = (-1 * np.exp(od_loss_rate_log[:, c])) + 1
     for i in range(110):
-        od_latent[:, c][i] = (
-            1 / math.exp(-13.1 * od_loss_rate[:, c][i])) * od_flow[:, c][i]
+        od_latent[:, c][i] = (1 / math.exp(-13.1 * od_loss_rate[:, c][i])) * od_flow[:, c][i]
     link_latent[:, c] = np.dot(route, od_latent[:, c])
 
-i = 1
+with open("./matrix/capas_sep", "a") as f:
+    for i in range(28):
+        print(f"{link_traf[:,1][i] * (1 / math.exp(-13.1 * link_loss_rate[:, 1][i]))}Mbps", file=f)
+
+with open("./matrix/capas_od", "a") as f2:
+    for c in link_latent[:,1]:
+        print(f"{c}MBps",file=f2)
+
+# i = 1
 # print("odflow\n", od_flow[:, i])
 # print("odlatent\n", od_latent[:, i])
-print("odloss\n", od_loss_rate[:, i])
+# print("odloss\n", od_loss_rate[:, i])
 
-print("linktraffic\n", link_traf[:, i])
-print("linklatent\n", link_latent[:, i])
+# print("linktraffic\n", link_traf[:, i])
+# print("linklatent\n", link_latent[:, i])
 
-print("linklossrate\n", link_loss_rate[:, i])
+# print("linklossrate\n", link_loss_rate[:, i])
 
-a = np.ones(110) * 5
-b = np.dot(route, a)
+# a = np.ones(110) * 5
+# b = np.dot(route, a)
 
-print(link_traf[:, i] / b)
+# print(link_traf[:, i] / b)
+
+

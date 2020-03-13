@@ -411,7 +411,7 @@ main (int argc, char *argv[])
   // Setup traffic control queue
     TrafficControlHelper tch_lim, tch;
     // tch.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
-    tch.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("100p"));
+    tch.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("5p"));
     tch.Install (d0d1);
     tch.Install (d0d3);
     tch.Install (d1d2);
@@ -615,7 +615,7 @@ main (int argc, char *argv[])
             Ptr<Node> node = c.Get (i);
             Address sinkAddress = addresses[j];
             if (i == originNode && j == destinationNode){
-              app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate ("50Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j));
+              app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate ("35Mbps"), "n" + std::to_string(i) + "-n" + std::to_string(j));
             }else{
               app->Setup (tid, node ,sinkAddress, PACKET_SIZE, NUM_PACKETS, DataRate (DEFAULT_SEND_RATE), "n" + std::to_string(i) + "-n" + std::to_string(j));
             }
@@ -624,7 +624,7 @@ main (int argc, char *argv[])
             app->SetStopTime (Seconds (END_TIME - 1));
           }
         }
-      } 
+      }
   // Setup source applications end
 
 
