@@ -1,20 +1,29 @@
 #! /bin/bash
+declare -A MAP
+MAP[0]=A
+MAP[1]=B
+MAP[2]=C
+MAP[3]=D
+MAP[4]=E
+MAP[5]=F
+MAP[6]=G
+MAP[7]=H
+MAP[8]=I
+MAP[9]=J
+MAP[10]=K
 
-for i in {3..9}; do
-  for j in {0..10}; do
-        if [ $i -ne $j ]; then 
-            ./waf --run "internet2 --OrigNode=${i} --DestNode=${j}"
-            python3 ./matrix/matrix.py
-            mkdir "./Data/${i}-${j}-b"
-            mv ./matrix/link.* "./Data/${i}-${j}-b/"
-            ./waf --run "internet2 --OrigNode=${i} --DestNode=${j} --FileName=./matrix/capas_od"
-            mkdir "./Data/${i}-${j}-od"
-            mv ./matrix/link.* "./Data/${i}-${j}-od/"
-            ./waf --run "internet2 --OrigNode=${i} --DestNode=${j} --FileName=./matrix/capas_sep"
-            mkdir "./Data/${i}-${j}-sep"
-            mv ./matrix/link.* "./Data/${i}-${j}-sep/"
-            rm ./matrix/capas_od
-            rm ./matrix/capas_sep
+for i in {0..0}; do
+  for j in {10..10}; do
+        if [ $i != $j ]; then 
+          cd ~/Programs/ns-3-dev/matrix
+          python3 ./create_sim.py --OrigNode ${MAP[$i]} --DestNode ${MAP[$j]} >> created
+          python3 ./combine.py
+          cd ~/Programs/ns-3-dev
+          ./waf --run "created --OrigNode=${i} --DestNode=${j}"
+          rm capas_incd.py
+          rm route.py
+          rm created
+          # rm created.cc
         fi
     done
 done
