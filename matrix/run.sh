@@ -1,6 +1,6 @@
 #! /bin/bash
 
-for i in {0..10}; do
+for i in {3..9}; do
   for j in {0..10}; do
         if [ $i -ne $j ]; then 
             ./waf --run "internet2 --OrigNode=${i} --DestNode=${j}"

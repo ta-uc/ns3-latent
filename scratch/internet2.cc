@@ -18,7 +18,7 @@
 
 #define PACKET_SIZE 1300 //bytes 分割・統合されないサイズにする
 #define SEGMENT_SIZE 1300 //bytes この大きさのデータがたまると送信される
-#define ONE_DATUM 1000 //パケットで1データ
+#define ONE_DATUM 100 //パケットで1データ
 #define DEFAULT_SEND_RATE "5Mbps"
 #define NUM_PACKETS 50000000
 #define END_TIME 40.1 //Seconds
@@ -410,8 +410,9 @@ main (int argc, char *argv[])
 
   // Setup traffic control queue
     TrafficControlHelper tch_lim, tch;
-    // tch.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
-    tch.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("5p"));
+    tch.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
+    // tch.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("5p"));
+    // tch.SetRootQueueDisc ("ns3::FifoQueueDisc", "MaxSize", StringValue ("5p"));
     tch.Install (d0d1);
     tch.Install (d0d3);
     tch.Install (d1d2);
@@ -627,6 +628,7 @@ main (int argc, char *argv[])
       }
   // Setup source applications end
 
+std::cout << originNode << destinationNode << std::endl;
 
   // Trace settings
   AsciiTraceHelper ascii;

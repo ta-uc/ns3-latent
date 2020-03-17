@@ -173,10 +173,13 @@ with open(os.path.join(os.path.dirname(__file__), "link.loss"), "r") as f:
             j += 1
             i = 0
 
+with open(os.path.join(os.path.dirname(__file__), "capas_default"), "r") as f:
+    capas_d = [line.replace("\n","").replace("Mbps","") for line in f]
+    
+
 link_traf = link_traf_bytes * 8 / interval / 1000000
 link_no_loss = link_pktc + link_loss
-link_loss_rate = np.divide(link_loss, link_no_loss, out=np.zeros_like(
-    link_loss), where=link_no_loss != 0)
+link_loss_rate = np.divide(link_loss, link_no_loss, out=np.zeros_like(link_loss), where=link_no_loss != 0)
 link_loss_rate_log = np.log(1-link_loss_rate)
 
 od_flow = np.zeros((110, col), float)
@@ -196,21 +199,26 @@ for c in range(col):
 
 with open("./matrix/capas_sep", "a") as f:
     for i in range(28):
-        print(f"{link_traf[:,1][i] * (1 / math.exp(-13.1 * link_loss_rate[:, 1][i]))}Mbps", file=f)
-
+        if link_traf[:,1][i] * (1 / math.exp(-13.1 * link_loss_rate[:, 1][i])) > int(capas_d[i]):
+            print(f"{link_traf[:,1][i] * (1 / math.exp(-13.1 * link_loss_rate[:, 1][i]))}Mbps", file=f)
+        else:
+            print(f"{capas_d[i]}MBps", file=f)
+   
 with open("./matrix/capas_od", "a") as f2:
-    for c in link_latent[:,1]:
-        print(f"{c}MBps",file=f2)
+    for c,oc in zip(link_latent[:,1],capas_d):
+        if c > int(oc):
+            print(f"{c}MBps", file=f2)
+        else:
+            print(f"{oc}MBps", file=f2)
 
-# i = 1
+i = 1
 # print("odflow\n", od_flow[:, i])
 # print("odlatent\n", od_latent[:, i])
 # print("odloss\n", od_loss_rate[:, i])
 
-# print("linktraffic\n", link_traf[:, i])
-# print("linklatent\n", link_latent[:, i])
-
-# print("linklossrate\n", link_loss_rate[:, i])
+print("linktraffic\n", link_traf[:, i])
+print("linklatent\n", link_latent[:, i])
+print("linklossrate\n", link_loss_rate[:, i])
 
 # a = np.ones(110) * 5
 # b = np.dot(route, a)
