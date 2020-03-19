@@ -1,5 +1,5 @@
+from topology import links as all_links
 from route import route_lists
-from topology import links
 
 def route_print():
   for dct in route_lists:
@@ -28,21 +28,21 @@ def route_print():
 
     #エッジノード
     oif = 1
-    for link in links:
+    for link in all_links:
       oif += link.count(end)
     print(f"""  staticRouting{end}->AddHostRouteTo (i{end}{end}e.GetAddress(1), i{first}{first}e.GetAddress(1), rvector({{{oif}}},{{1}})); //{end}->{end}e""")
 
     for route in routes:
       if len(route) == 1: #分岐なし
-        link_part_list = [link for link in links if route[0][0] in list(link)]
+        link_part_list = [link for link in all_links if route[0][0] in list(link)]
         try:
           oif = link_part_list.index(route[0][0]+route[0][1]) + 1
         except:
           oif = link_part_list.index(route[0][1]+route[0][0]) + 1
         print(f"""  staticRouting{route[0][0]}->AddHostRouteTo (i{end}{end}e.GetAddress(1), i{first}{first}e.GetAddress(1), rvector({{{oif}}},{{1}})); //{route[0][0]}->{route[0][1]}""")
       if len(route) > 1:
-        link_part_list_a = [link for link in links if route[0][0] in list(link)]
-        link_part_list_b = [link for link in links if route[1][0] in list(link)]
+        link_part_list_a = [link for link in all_links if route[0][0] in list(link)]
+        link_part_list_b = [link for link in all_links if route[1][0] in list(link)]
         try:
           oif_a = link_part_list_a.index(route[0][0]+route[0][1]) + 1
         except:

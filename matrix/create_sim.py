@@ -5,11 +5,15 @@ import argparse
 parser = argparse.ArgumentParser(description='Write out NS3 program')
 parser.add_argument('--OrigNode', action="store", dest="orig_node", default="A")
 parser.add_argument('--DestNode', action="store", dest="dest_node", default="K")
+parser.add_argument('--OdRate', action="store", dest="od_rate", default="")
+parser.add_argument('--Opt', action="store_true")
 results = parser.parse_args()
 
-opt_route_capa(results.orig_node,results.dest_node)
-
-from capas_incd import capas
+opt_route_capa(results.orig_node,results.dest_node,results.od_rate)
+if results.Opt:
+  from capas_incd import capas
+else:
+  from topology import capas
 
 print("""  NodeContainer c, c_e;
   c.Create ({0});

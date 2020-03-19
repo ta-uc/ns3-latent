@@ -2,7 +2,7 @@ import pulp
 from topology import nodes, links_all as links, capas as c
 
 
-def opt_route_capa(OrigNode,DestNode):
+def opt_route_capa(OrigNode,DestNode,od_rate):
   # links 全リンク
   # nodes 全ノード
   # c[ij] リンク容量
@@ -10,6 +10,22 @@ def opt_route_capa(OrigNode,DestNode):
   t = {} # t[pq] ODトラフィック
   w = {} # w[ij] リンク増分
   x = {} # x[pqij] リンク(ij)のOD(pq)トラフィック割合
+
+  if od_rate == "latent":
+    from odrate import latent as t
+  elif od_rate == "actual":
+    from odrate import actual as t
+  else:
+    # ODトラヒック初期化
+    for p in nodes:
+      for q in nodes:
+        if p != q:
+          t[p+q] = 5
+    # 増加OD設定 ノードp -> ノードq
+    _p = OrigNode
+    _q = DestNode
+    t[_p+_q] = 35
+
 
   # リンク増分初期化
   for ij in links:
@@ -20,17 +36,6 @@ def opt_route_capa(OrigNode,DestNode):
     for d in nodes:
       if o != d:
         ods.append(o+d)
-
-  # ODトラヒック初期化
-    for p in nodes:
-      for q in nodes:
-        if p != q:
-          t[p+q] = 5
-
-  # 増加OD設定 ノードp -> ノードq
-  _p = OrigNode
-  _q = DestNode
-  t[_p+_q] = 35
 
   # ODトラヒック割合　初期化　(6.2e)
   for pq in ods:
