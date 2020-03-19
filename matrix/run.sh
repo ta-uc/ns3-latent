@@ -12,8 +12,8 @@ MAP[8]=I
 MAP[9]=J
 MAP[10]=K
 
-for i in {0..10}; do
-  for j in {0..10}; do
+for i in {0..0}; do
+  for j in {1..1}; do
         if [ $i != $j ]; then 
           #before
           cd ~/Programs/ns-3-dev/matrix
@@ -39,7 +39,7 @@ for i in {0..10}; do
           mkdir ./Data/$i-$j-l
           cd ~/Programs/ns-3-dev/matrix
           mv link.* ../Data/$i-$j-l
-          rm capas_incd.py
+          mv capas_incd.py ../Data/$i-$j-l
           mv route.py ../Data/$i-$j-l
           rm created
           rm ../scratch/created.cc
@@ -54,7 +54,7 @@ for i in {0..10}; do
           mkdir ./Data/$i-$j-a
           cd ~/Programs/ns-3-dev/matrix
           mv link.* ../Data/$i-$j-a
-          rm capas_incd.py
+          mv capas_incd.py ../Data/$i-$j-a
           mv route.py ../Data/$i-$j-a
           rm created
           rm ../scratch/created.cc
