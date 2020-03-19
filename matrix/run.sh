@@ -58,11 +58,9 @@ for i in {0..0}; do
           mv route.py ../Data/$i-$j-a
           rm created
           rm ../scratch/created.cc
-
           mv odrate_result_actual.py ../Data/$i-$j-a
           mv odrate_result_latent.py ../Data/$i-$j-l
           mv odrate.py ../Data/$i-$j-b
-
         fi
     done
 done
