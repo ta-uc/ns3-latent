@@ -15,53 +15,70 @@ MAP[10]=K
 for i in {0..0}; do
   for j in {10..10}; do
         if [ $i != $j ]; then
-           
-          # #before
-          # cd ~/Programs/ns-3-dev/matrix
-          # python3 ./create_sim.py --OrigNode ${MAP[$i]} --DestNode ${MAP[$j]} >> created
-          # python3 ./combine.py
-          # cd ~/Programs/ns-3-dev
-          # ./waf --run "created --OrigNode=${i} --DestNode=${j}"
-          # python3 ./Plot/datarate.py >> ./matrix/odrate.py
-          # mkdir ./Data/$i-$j-b
-          # cd ~/Programs/ns-3-dev/matrix
-          # mv link.* ../Data/$i-$j-b
-          # mv route.py ../Data/$i-$j-b
-          # rm created
-          # rm ../scratch/created.cc
+          # 初期シミュレーション作成
+          cd ~/Programs/ns-3-dev/matrix
+          python3 ./create_sim.py --OrigNode ${MAP[$i]} --DestNode ${MAP[$j]} --Opt init >> created
+          python3 ./combine.py
+          rm ./created
+          cd ~/Programs/ns-3-dev
+          # 初期シミュレーション実行
+          ./waf --run "created --OrigNode=${i} --DestNode=${j}"
+          cd ~/Programs/ns-3-dev/matrix
+          # ODトラヒック集計　ー＞ルーティングマトリクスからに変更予定
+          python3 ./get_od_data.py --Situ before
+          # クリーンアップ
+          mkdir ../Data/$i-$j-init
+          mkdir ../Data/$i-$j-init/p
+          mv ./Data/* ../Data/$i-$j-init/p
+          mv ./link.* ../Data/$i-$j-init
+          mv ./orig_route.py ../Data/$i-$j-init
+          cd ~/Programs/ns-3-dev/scratch
+          rm ./created.cc
 
-          # #latent
-          # cd ~/Programs/ns-3-dev/matrix
-          # python3 ./create_sim.py --Opt --OdRate latent --OrigNode ${MAP[$i]} --DestNode ${MAP[$j]} >> created
-          # python3 ./combine.py
-          # cd ~/Programs/ns-3-dev
-          # ./waf --run "created --OrigNode=${i} --DestNode=${j}"
-          # python3 ./Plot/datarate.py >> ./matrix/odrate_result_latent.py
-          # mkdir ./Data/$i-$j-l
-          # cd ~/Programs/ns-3-dev/matrix
-          # mv link.* ../Data/$i-$j-l
-          # mv capas_incd.py ../Data/$i-$j-l
-          # mv route.py ../Data/$i-$j-l
-          # rm created
-          # rm ../scratch/created.cc
+          # 経路制御シミュレーション作成
+          cd ~/Programs/ns-3-dev/matrix
+          python3 ./create_sim.py --OrigNode ${MAP[$i]} --DestNode ${MAP[$j]} --Opt te >> created
+          python3 ./combine.py
+          rm ./created
+          cd ~/Programs/ns-3-dev
+          # 経路制御シミュレーション実行
+          ./waf --run "created --OrigNode=${i} --DestNode=${j}"
+          cd ~/Programs/ns-3-dev/matrix
+          # ODトラヒック集計　ー＞ルーティングマトリクスからに変更予定
+          python3 ./get_od_data.py --Situ after
+          # クリーンアップ
+          mkdir ../Data/$i-$j-after
+          mkdir ../Data/$i-$j-after/p
+          mv ./Data/* ../Data/$i-$j-after/p
+          mv ./link.* ../Data/$i-$j-after
+          mv ./util_opt_route.py ../Data/$i-$j-after
+          cd ~/Programs/ns-3-dev/scratch
+          rm ./created.cc
 
-          # #actual
-          # cd ~/Programs/ns-3-dev/matrix
-          # python3 ./create_sim.py --Opt --OdRate actual --OrigNode ${MAP[$i]} --DestNode ${MAP[$j]} >> created
-          # python3 ./combine.py
-          # cd ~/Programs/ns-3-dev
-          # ./waf --run "created --OrigNode=${i} --DestNode=${j}"
-          # python3 ./Plot/datarate.py >> ./matrix/odrate_result_actual.py
-          # mkdir ./Data/$i-$j-a
-          # cd ~/Programs/ns-3-dev/matrix
-          # mv link.* ../Data/$i-$j-a
-          # mv capas_incd.py ../Data/$i-$j-a
-          # mv route.py ../Data/$i-$j-a
-          # rm created
-          # rm ../scratch/created.cc
-          # mv odrate_result_actual.py ../Data/$i-$j-a
-          # mv odrate_result_latent.py ../Data/$i-$j-l
-          # mv odrate.py ../Data/$i-$j-b
+          # 帯域設計経路制御シミュレーション作成
+          cd ~/Programs/ns-3-dev/matrix
+          python3 ./create_sim.py --OrigNode ${MAP[$i]} --DestNode ${MAP[$j]} --Opt tecp >> created
+          python3 ./combine.py
+          rm ./created
+          cd ~/Programs/ns-3-dev
+          # 帯域設計経路制御シミュレーション実行
+          ./waf --run "created --OrigNode=${i} --DestNode=${j}"
+          cd ~/Programs/ns-3-dev/matrix
+          # ODトラヒック集計　ー＞ルーティングマトリクスからに変更予定
+          python3 ./get_od_data.py --Situ last
+          # クリーンアップ
+          mkdir ../Data/$i-$j-last
+          mkdir ../Data/$i-$j-last/p
+          mv ./Data/* ../Data/$i-$j-last/p
+          mv ./link.* ../Data/$i-$j-last
+          mv ./util_capa_opt_route.py ../Data/$i-$j-last
+          mv ./capas_incd.py ../Data/$i-$j-last
+          mv ./od_data_before.py ../Data/$i-$j-init
+          mv ./od_data_after.py ../Data/$i-$j-after
+          mv ./od_data_last.py ../Data/$i-$j-last
+          mv ./estimated_gamma.txt ../Data/$i-$j-last
+          cd ~/Programs/ns-3-dev/scratch
+          rm ./created.cc
         fi
     done
 done

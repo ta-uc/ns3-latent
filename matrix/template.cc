@@ -122,10 +122,10 @@ MyApp::Setup (TypeId tid,Ptr<Node> node, Address address, uint32_t packetSize, u
   m_targetRate = dataRate.GetBitRate ();
 
   AsciiTraceHelper ascii;
-  // m_cwndStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".cwnd");
-  // m_datarateStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".drate");
-  m_lossStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".loss");
-  m_tcpTxStream = ascii.CreateFileStream ("./Plot/Data/"+m_name+".thr");
+  // m_cwndStream = ascii.CreateFileStream ("./matrix/Data/"+m_name+".cwnd");
+  // m_datarateStream = ascii.CreateFileStream ("./matrix/Data/"+m_name+".drate");
+  m_lossStream = ascii.CreateFileStream ("./matrix/Data/"+m_name+".loss");
+  m_tcpTxStream = ascii.CreateFileStream ("./matrix/Data/"+m_name+".thr");
 }
 
 void
