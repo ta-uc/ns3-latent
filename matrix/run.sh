@@ -24,8 +24,10 @@ for i in {0..0}; do
           # 初期シミュレーション実行
           ./waf --run "created --OrigNode=${i} --DestNode=${j}"
           cd ~/Programs/ns-3-dev/matrix
-          # ODトラヒック集計　ー＞ルーティングマトリクスからに変更予定
-          python3 ./get_od_data.py --Situ before
+          # ODトラヒック集計 OD直接計測
+          # python3 ./get_od_data.py --Situ before
+          # ODトラヒック集計 OD推定
+          python3 ./estimate_od_data.py --Situ before
           # クリーンアップ
           mkdir ../Data/$i-$j-init
           mkdir ../Data/$i-$j-init/p
@@ -44,8 +46,10 @@ for i in {0..0}; do
           # 経路制御シミュレーション実行
           ./waf --run "created --OrigNode=${i} --DestNode=${j}"
           cd ~/Programs/ns-3-dev/matrix
-          # ODトラヒック集計　ー＞ルーティングマトリクスからに変更予定
-          python3 ./get_od_data.py --Situ after
+          # ODトラヒック集計 OD直接計測
+          # python3 ./get_od_data.py --Situ last
+          # ODトラヒック集計 OD推定
+          python3 ./estimate_od_data.py --Situ after
           # クリーンアップ
           mkdir ../Data/$i-$j-after
           mkdir ../Data/$i-$j-after/p
@@ -64,7 +68,7 @@ for i in {0..0}; do
           # 帯域設計経路制御シミュレーション実行
           ./waf --run "created --OrigNode=${i} --DestNode=${j}"
           cd ~/Programs/ns-3-dev/matrix
-          # ODトラヒック集計　ー＞ルーティングマトリクスからに変更予定
+          # ODトラヒック集計 OD直接計測
           python3 ./get_od_data.py --Situ last
           # クリーンアップ
           mkdir ../Data/$i-$j-last

@@ -1,6 +1,5 @@
 from topology import nodes, links, links_all
 from print_route import print_route
-from combine import combine
 import argparse
 import sys
 import time
@@ -33,5 +32,4 @@ elif params.opt == "init":
 else:
   sys.exit()
 
-# print_node_settings(capas) # ノード設定書き出し
 print_route(route_lists, capas) # 経路情報書き出し
