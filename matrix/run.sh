@@ -16,14 +16,15 @@ for i in {0..0}; do
   for j in {10..10}; do
         if [ $i != $j ]; then
           # 初期シミュレーション作成
-          cd ~/Programs/ns-3-dev/matrix
+          echo $i-$j init
+          cd ./matrix
           python3 ./create_sim.py --OrigNode ${MAP[$i]} --DestNode ${MAP[$j]} --Opt init >> created
           python3 ./combine.py
           rm ./created
-          cd ~/Programs/ns-3-dev
+          cd ../
           # 初期シミュレーション実行
-          ./waf --run "created --OrigNode=${i} --DestNode=${j}"
-          cd ~/Programs/ns-3-dev/matrix
+          ./waf --run "created --OrigNode=${i} --DestNode=${j}" 1> /dev/null
+          cd ./matrix
           # ODトラヒック集計 OD直接計測
           # python3 ./get_od_data.py --Situ before
           # ODトラヒック集計 OD推定
@@ -34,18 +35,19 @@ for i in {0..0}; do
           mv ./Data/* ../Data/$i-$j-init/p
           mv ./link.* ../Data/$i-$j-init
           mv ./orig_route.py ../Data/$i-$j-init
-          cd ~/Programs/ns-3-dev/scratch
+          cd ../scratch
           rm ./created.cc
 
           # 経路制御シミュレーション作成
-          cd ~/Programs/ns-3-dev/matrix
+          echo $i-$j TE actual
+          cd ../matrix
           python3 ./create_sim.py --OrigNode ${MAP[$i]} --DestNode ${MAP[$j]} --Opt te >> created
           python3 ./combine.py
           rm ./created
-          cd ~/Programs/ns-3-dev
+          cd ../
           # 経路制御シミュレーション実行
-          ./waf --run "created --OrigNode=${i} --DestNode=${j}"
-          cd ~/Programs/ns-3-dev/matrix
+          ./waf --run "created --OrigNode=${i} --DestNode=${j}" 1> /dev/null
+          cd ./matrix
           # ODトラヒック集計 OD直接計測
           # python3 ./get_od_data.py --Situ last
           # ODトラヒック集計 OD推定
@@ -56,18 +58,19 @@ for i in {0..0}; do
           mv ./Data/* ../Data/$i-$j-after/p
           mv ./link.* ../Data/$i-$j-after
           mv ./util_opt_route.py ../Data/$i-$j-after
-          cd ~/Programs/ns-3-dev/scratch
+          cd ../scratch
           rm ./created.cc
 
           # 帯域設計経路制御シミュレーション作成
-          cd ~/Programs/ns-3-dev/matrix
+          echo $i-$j TECP estimated gamma
+          cd ../matrix
           python3 ./create_sim.py --OrigNode ${MAP[$i]} --DestNode ${MAP[$j]} --Opt tecp >> created
           python3 ./combine.py
           rm ./created
-          cd ~/Programs/ns-3-dev
+          cd ../
           # 帯域設計経路制御シミュレーション実行
-          ./waf --run "created --OrigNode=${i} --DestNode=${j}"
-          cd ~/Programs/ns-3-dev/matrix
+          ./waf --run "created --OrigNode=${i} --DestNode=${j}" 1> /dev/null
+          cd ./matrix
           # ODトラヒック集計 OD直接計測
           python3 ./get_od_data.py --Situ last
           # クリーンアップ
@@ -81,8 +84,9 @@ for i in {0..0}; do
           mv ./od_data_after.py ../Data/$i-$j-after
           mv ./od_data_last.py ../Data/$i-$j-last
           mv ./estimated_gamma.txt ../Data/$i-$j-last
-          cd ~/Programs/ns-3-dev/scratch
+          cd ../scratch
           rm ./created.cc
+          cd ../
         fi
     done
 done
