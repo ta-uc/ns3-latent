@@ -10,12 +10,13 @@ def estimate_gamma():
     od_packet_loss_before = loss_before[od] # 経路制御前観測パケットロス率
     od_packet_loss_after = loss_before[od]  # 経路制御前観測パケットロス率
 
-    # if od_packet_loss_before != 0 and od_traffic_before != od_traffic_after:
-    if od_packet_loss_before - od_packet_loss_after != 0:
+    if (od_packet_loss_before - od_packet_loss_after) != 0:
       gamma.append(math.log(od_traffic_before / od_traffic_after) / (od_packet_loss_before - od_packet_loss_after))
   
-  gamma_mean = sum(gamma) / len(gamma)
-
+  if len(gamma) != 0:
+    gamma_mean = sum(gamma) / len(gamma)
+  else: 
+    gamma_mean = 0
   with open("estimated_gamma.txt","w") as egf:
     print(repr(gamma), file=egf)
     print(gamma_mean, file=egf)
