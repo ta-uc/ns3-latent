@@ -363,9 +363,9 @@ main (int argc, char *argv[])
 
   // Trace settings
     AsciiTraceHelper ascii;
-    streamLinkTrafSize = ascii.CreateFileStream ("./matrix/link.traf");
-    streamLinkPktCount = ascii.CreateFileStream ("./matrix/link.pktc");
-    streamLinkLossCount = ascii.CreateFileStream ("./matrix/link.loss");
+    streamLinkTrafSize = ascii.CreateFileStream ("./link.traf");
+    streamLinkPktCount = ascii.CreateFileStream ("./link.pktc");
+    streamLinkLossCount = ascii.CreateFileStream ("./link.loss");
 
     Simulator::Schedule(Time (Seconds (INTERVAL)), &monitorLink, INTERVAL);
     *streamLinkTrafSize->GetStream ()<< INTERVAL <<"\n\n";
