@@ -23,7 +23,7 @@ for i in {0..0}; do
           rm ./created
           cd ../
           # 初期シミュレーション実行
-          ./waf --run "created --OrigNode=${i} --DestNode=${j}" 1> /dev/null
+          ./waf --run "created --OrigNode=${i} --DestNode=${j}" --cwd="./matrix" 1> /dev/null
           cd ./matrix
           # ODトラヒック集計 OD直接計測
           # python3 ./get_od_data.py --Situ before
@@ -46,7 +46,7 @@ for i in {0..0}; do
           rm ./created
           cd ../
           # 経路制御シミュレーション実行
-          ./waf --run "created --OrigNode=${i} --DestNode=${j}" 1> /dev/null
+          ./waf --run "created --OrigNode=${i} --DestNode=${j}"  --cwd="./matrix" 1> /dev/null
           cd ./matrix
           # ODトラヒック集計 OD直接計測
           # python3 ./get_od_data.py --Situ last
@@ -69,7 +69,7 @@ for i in {0..0}; do
           rm ./created
           cd ../
           # 帯域設計経路制御シミュレーション実行
-          ./waf --run "created --OrigNode=${i} --DestNode=${j}" 1> /dev/null
+          ./waf --run "created --OrigNode=${i} --DestNode=${j}"  --cwd="./matrix" 1> /dev/null
           cd ./matrix
           # ODトラヒック集計 OD直接計測
           python3 ./get_od_data.py --Situ last
