@@ -8,7 +8,7 @@ def estimate_gamma():
     od_traffic_before = traffic_before[od]  # 経路制御前観測トラヒック
     od_traffic_after = traffic_after[od]    # 経路制御後観測トラヒック
     od_packet_loss_before = loss_before[od] # 経路制御前観測パケットロス率
-    od_packet_loss_after = loss_before[od]  # 経路制御前観測パケットロス率
+    od_packet_loss_after = loss_after[od]  # 経路制御前観測パケットロス率
 
     if (od_packet_loss_before - od_packet_loss_after) != 0:
       gamma.append(math.log(od_traffic_before / od_traffic_after) / (od_packet_loss_before - od_packet_loss_after))
